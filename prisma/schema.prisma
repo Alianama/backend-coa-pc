@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int          @id @default(autoincrement())
+  fullName      String
+  username      String       @unique
+  email         String?      @unique
+  password      String
+  roleId        Int
+  tokenVersion  Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  role          Role         @relation(fields: [roleId], references: [id])
+  createdCoas   master_coa[] @relation("CreatedBy")
+  approvedCoas  master_coa[] @relation("ApprovedBy")
+  deletedCoasCreated   deleted_coa[] @relation("DeletedCreatedBy")
+  deletedCoasApproved  deleted_coa[] @relation("DeletedApprovedBy")
+  deletedCoas          deleted_coa[] @relation("DeletedBy")
+  restoredCoas         deleted_coa[] @relation("RestoredBy")
+}
+
+model Role {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model master_coa {
+  id                Int      @id @default(autoincrement())
+  costumerName      String
+  productName       String
+  letDownResin      String
+  lotNumber         String
+  quantity          String
+  pelletSize        String
+  pelletVisual      String
+  color             String
+  dispersibility    String
+  mfr               String
+  density           String
+  moisture          String
+  carbonConten      String
+  mfgDate           DateTime
+  expiryDate        DateTime
+  anaysisDate       DateTime
+  printedDate       DateTime
+  forignMater       String
+  weightOfChips     String
+  intrinsicViscosity String
+  ashContent        String
+  issueBy           String
+  status            String
+  approvedBy        Int?
+  approvedDate      DateTime?
+  createdBy         Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  creator           User     @relation("CreatedBy", fields: [createdBy], references: [id])
+  approver          User?    @relation("ApprovedBy", fields: [approvedBy], references: [id])
+}
+
+model deleted_coa {
+  id                Int      @id @default(autoincrement())
+  costumerName      String
+  productName       String
+  letDownResin      String
+  lotNumber         String
+  quantity          String
+  pelletSize        String
+  pelletVisual      String
+  color             String
+  dispersibility    String
+  mfr               String
+  density           String
+  moisture          String
+  carbonConten      String
+  mfgDate           DateTime
+  expiryDate        DateTime
+  anaysisDate       DateTime
+  printedDate       DateTime
+  forignMater       String
+  weightOfChips     String
+  intrinsicViscosity String
+  ashContent        String
+  issueBy           String
+  approvedBy        Int?
+  approvedDate      DateTime?
+  createdBy         Int
+  createdAt         DateTime
+  updatedAt         DateTime
+  deletedBy         Int
+  deletedAt         DateTime @default(now())
+  isRestored        Boolean  @default(false)
+  restoredAt        DateTime?
+  restoredBy        Int?
+  originalId        Int      @unique
+  creator           User     @relation("DeletedCreatedBy", fields: [createdBy], references: [id])
+  approver          User?    @relation("DeletedApprovedBy", fields: [approvedBy], references: [id])
+  deleter           User     @relation("DeletedBy", fields: [deletedBy], references: [id])
+  restorer          User?    @relation("RestoredBy", fields: [restoredBy], references: [id])
+}
