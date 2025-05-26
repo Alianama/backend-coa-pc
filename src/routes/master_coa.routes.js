@@ -52,4 +52,7 @@ router.post(
   masterCoaController.approve
 );
 
+// Routes yang memerlukan permission UPDATE_COA untuk request approval
+router.post("/:id/request-approval", masterCoaController.requestApproval);
+
 module.exports = router;

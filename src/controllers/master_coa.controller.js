@@ -673,6 +673,62 @@ const masterCoaController = {
       });
     }
   },
+
+  async requestApproval(req, res) {
+    try {
+      const { id } = req.params;
+
+      // Cek apakah COA ada
+      const existingCoa = await prisma.master_coa.findUnique({
+        where: { id: parseInt(id) },
+      });
+
+      if (!existingCoa) {
+        return res.status(404).json({
+          status: "error",
+          message: "COA tidak ditemukan",
+        });
+      }
+
+      // Cek apakah user adalah pembuat COA
+      if (existingCoa.issueBy !== req.user.id) {
+        return res.status(403).json({
+          status: "error",
+          message:
+            "Hanya pembuat COA yang dapat mengirim permintaan persetujuan",
+        });
+      }
+
+      // Cek status COA
+      if (existingCoa.status === "need_approval") {
+        return res.status(400).json({
+          status: "error",
+          message: "COA sudah dalam status menunggu persetujuan",
+        });
+      }
+
+      const coa = await prisma.master_coa.update({
+        where: {
+          id: parseInt(id),
+        },
+        data: {
+          status: "need_approval",
+        },
+      });
+
+      res.json({
+        status: "success",
+        message: "Permintaan persetujuan COA berhasil dikirim",
+        data: coa,
+      });
+    } catch (error) {
+      console.error("Error requesting COA approval:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Terjadi kesalahan saat mengirim permintaan persetujuan COA",
+      });
+    }
+  },
 };
 
 module.exports = masterCoaController;
