@@ -61,27 +61,27 @@ model master_coa {
   id                Int      @id @default(autoincrement())
   costumerName      String
   productName       String
-  letDownResin      String
   lotNumber         String
   quantity          String
-  pelletSize        String
-  pelletVisual      String
-  color             String
-  dispersibility    String
-  mfr               String
-  density           String
-  moisture          String
-  carbonConten      String
-  mfgDate           DateTime
-  expiryDate        DateTime
-  anaysisDate       DateTime
-  printedDate       DateTime
-  forignMater       String
-  weightOfChips     String
-  intrinsicViscosity String
-  ashContent        String
-  issueBy           String
-  status            String
+  letDownResin      String?
+  pelletSize        String?
+  pelletVisual      String?
+  color             String?
+  dispersibility    String?
+  mfr               String?
+  density           String?
+  moisture          String?
+  carbonConten      String?
+  mfgDate           DateTime?
+  expiryDate        DateTime?
+  anaysisDate       DateTime?
+  printedDate       DateTime?
+  forignMater       String?
+  weightOfChips     String?
+  intrinsicViscosity String?
+  ashContent        String?
+  issueBy           String?
+  status            String   @default("draft")
   approvedBy        Int?
   approvedDate      DateTime?
   createdBy         Int

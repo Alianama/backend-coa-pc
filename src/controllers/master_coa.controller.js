@@ -32,6 +32,7 @@ const masterCoaController = {
       // Validasi data wajib
       if (!costumerName || !productName || !lotNumber || !quantity) {
         return res.status(400).json({
+          status: "error",
           message: "Data tidak lengkap",
           error:
             "costumerName, productName, lotNumber, dan quantity harus diisi",
@@ -43,6 +44,7 @@ const masterCoaController = {
       for (const [key, value] of Object.entries(dates)) {
         if (value && isNaN(new Date(value).getTime())) {
           return res.status(400).json({
+            status: "error",
             message: "Format tanggal tidak valid",
             error: `Format tanggal ${key} tidak valid`,
           });
@@ -57,6 +59,7 @@ const masterCoaController = {
 
       if (!currentUser) {
         return res.status(404).json({
+          status: "error",
           message: "User tidak ditemukan",
           error: "User yang sedang login tidak ditemukan",
         });
@@ -66,28 +69,32 @@ const masterCoaController = {
         data: {
           costumerName,
           productName,
-          letDownResin,
+          letDownResin: letDownResin || null,
           lotNumber,
           quantity: quantity.toString(),
-          pelletSize,
-          pelletVisual,
-          color,
-          dispersibility,
-          mfr,
-          density,
-          moisture,
-          carbonConten,
+          pelletSize: pelletSize || null,
+          pelletVisual: pelletVisual || null,
+          color: color || null,
+          dispersibility: dispersibility || null,
+          mfr: mfr || null,
+          density: density || null,
+          moisture: moisture || null,
+          carbonConten: carbonConten || null,
           status: "draft",
           mfgDate: mfgDate ? new Date(mfgDate) : null,
           expiryDate: expiryDate ? new Date(expiryDate) : null,
           anaysisDate: anaysisDate ? new Date(anaysisDate) : null,
           printedDate: printedDate ? new Date(printedDate) : null,
-          forignMater,
-          weightOfChips,
-          intrinsicViscosity,
-          ashContent,
+          forignMater: forignMater || null,
+          weightOfChips: weightOfChips || null,
+          intrinsicViscosity: intrinsicViscosity || null,
+          ashContent: ashContent || null,
           issueBy: currentUser.username,
-          createdBy: req.user.id,
+          creator: {
+            connect: {
+              id: req.user.id,
+            },
+          },
         },
         include: {
           creator: {
@@ -110,12 +117,14 @@ const masterCoaController = {
       };
 
       res.status(201).json({
+        status: "success",
         message: "COA berhasil dibuat",
         data: transformedCoa,
       });
     } catch (error) {
       console.error("Error creating COA:", error);
       res.status(500).json({
+        status: "error",
         message: "Terjadi kesalahan saat membuat COA",
         error: error.message,
       });
@@ -173,9 +182,10 @@ const masterCoaController = {
       });
     } catch (error) {
       console.error("Error fetching COAs:", error);
-      res
-        .status(500)
-        .json({ message: "Terjadi kesalahan saat mengambil data COA" });
+      res.status(500).json({
+        status: "error",
+        message: "Terjadi kesalahan saat mengambil data COA",
+      });
     }
   },
 
@@ -187,6 +197,7 @@ const masterCoaController = {
       // Validasi ID
       if (!id || isNaN(parseInt(id))) {
         return res.status(400).json({
+          status: "error",
           message: "ID tidak valid",
           error: "ID harus berupa angka",
         });
@@ -213,6 +224,7 @@ const masterCoaController = {
 
       if (!coa) {
         return res.status(404).json({
+          status: "error",
           message: "COA tidak ditemukan",
           error: `COA dengan ID ${coaId} tidak ditemukan`,
         });
@@ -231,12 +243,14 @@ const masterCoaController = {
       };
 
       res.json({
+        status: "success",
         message: "Data COA berhasil diambil",
         data: transformedCoa,
       });
     } catch (error) {
       console.error("Error fetching COA:", error);
       res.status(500).json({
+        status: "error",
         message: "Terjadi kesalahan saat mengambil data COA",
         error: error.message,
       });
@@ -313,14 +327,16 @@ const masterCoaController = {
       });
 
       res.json({
+        status: "success",
         message: "COA berhasil diperbarui",
         data: coa,
       });
     } catch (error) {
       console.error("Error updating COA:", error);
-      res
-        .status(500)
-        .json({ message: "Terjadi kesalahan saat memperbarui COA" });
+      res.status(500).json({
+        status: "error",
+        message: "Terjadi kesalahan saat memperbarui COA",
+      });
     }
   },
 
@@ -377,6 +393,7 @@ const masterCoaController = {
       });
 
       res.json({
+        status: "success",
         message: "COA berhasil dihapus",
       });
     } catch (error) {
@@ -656,6 +673,7 @@ const masterCoaController = {
         },
         data: {
           approvedBy: req.user.id,
+          status: "approved",
           approvedDate: new Date(),
         },
       });
@@ -691,7 +709,7 @@ const masterCoaController = {
       }
 
       // Cek apakah user adalah pembuat COA
-      if (existingCoa.issueBy !== req.user.id) {
+      if (existingCoa.createdBy !== req.user.id) {
         return res.status(403).json({
           status: "error",
           message:
