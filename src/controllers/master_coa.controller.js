@@ -18,12 +18,12 @@ const masterCoaController = {
         mfr,
         density,
         moisture,
-        carbonConten,
+        carbonContent,
         mfgDate,
         expiryDate,
-        anaysisDate,
+        analysisDate,
         printedDate,
-        forignMater,
+        foreignMatter,
         weightOfChips,
         intrinsicViscosity,
         ashContent,
@@ -40,7 +40,7 @@ const masterCoaController = {
       }
 
       // Validasi format tanggal
-      const dates = { mfgDate, expiryDate, anaysisDate, printedDate };
+      const dates = { mfgDate, expiryDate, analysisDate, printedDate };
       for (const [key, value] of Object.entries(dates)) {
         if (value && isNaN(new Date(value).getTime())) {
           return res.status(400).json({
@@ -79,13 +79,13 @@ const masterCoaController = {
           mfr: mfr || null,
           density: density || null,
           moisture: moisture || null,
-          carbonConten: carbonConten || null,
+          carbonContent: carbonContent || null,
           status: "draft",
           mfgDate: mfgDate ? new Date(mfgDate) : null,
           expiryDate: expiryDate ? new Date(expiryDate) : null,
-          anaysisDate: anaysisDate ? new Date(anaysisDate) : null,
+          analysisDate: analysisDate ? new Date(analysisDate) : null,
           printedDate: printedDate ? new Date(printedDate) : null,
-          forignMater: forignMater || null,
+          foreignMatter: foreignMatter || null,
           weightOfChips: weightOfChips || null,
           intrinsicViscosity: intrinsicViscosity || null,
           ashContent: ashContent || null,
@@ -112,7 +112,7 @@ const masterCoaController = {
         updatedAt: coa.updatedAt?.toISOString(),
         mfgDate: coa.mfgDate?.toISOString(),
         expiryDate: coa.expiryDate?.toISOString(),
-        anaysisDate: coa.anaysisDate?.toISOString(),
+        analysisDate: coa.analysisDate?.toISOString(),
         printedDate: coa.printedDate?.toISOString(),
       };
 
@@ -137,7 +137,7 @@ const masterCoaController = {
       const { page = 1, limit = 100, search = "" } = req.query;
       const skip = (page - 1) * limit;
 
-      const where = search
+      const baseFilter = search
         ? {
             OR: [
               { costumerName: { contains: search } },
@@ -146,6 +146,18 @@ const masterCoaController = {
             ],
           }
         : {};
+
+      statusFilter = {
+        OR: [
+          { createdBy: req.user.id },
+          { status: { in: ["approved", "need_approval"] } },
+        ],
+      };
+
+      const where = {
+        ...baseFilter,
+        ...statusFilter,
+      };
 
       const [coas, total] = await Promise.all([
         prisma.master_coa.findMany({
@@ -171,6 +183,7 @@ const masterCoaController = {
 
       res.json({
         status: "success",
+        role: req.user.roleId,
         message: "Data COA berhasil diambil",
         data: coas,
         pagination: {
@@ -238,7 +251,7 @@ const masterCoaController = {
         approvedDate: coa.approvedDate?.toISOString(),
         mfgDate: coa.mfgDate?.toISOString(),
         expiryDate: coa.expiryDate?.toISOString(),
-        anaysisDate: coa.anaysisDate?.toISOString(),
+        analysisDate: coa.analysisDate?.toISOString(),
         printedDate: coa.printedDate?.toISOString(),
       };
 
@@ -274,12 +287,12 @@ const masterCoaController = {
         mfr,
         density,
         moisture,
-        carbonConten,
+        carbonContent,
         mfgDate,
         expiryDate,
-        anaysisDate,
+        analysisDate,
         printedDate,
-        forignMater,
+        foreignMatter,
         weightOfChips,
         intrinsicViscosity,
         ashContent,
@@ -302,12 +315,12 @@ const masterCoaController = {
           mfr,
           density,
           moisture,
-          carbonConten,
+          carbonContent,
           mfgDate: new Date(mfgDate),
           expiryDate: new Date(expiryDate),
-          anaysisDate: new Date(anaysisDate),
+          analysisDate: new Date(analysisDate),
           printedDate: new Date(printedDate),
-          forignMater,
+          foreignMatter,
           weightOfChips,
           intrinsicViscosity,
           ashContent,
@@ -352,6 +365,14 @@ const masterCoaController = {
         return res.status(404).json({ message: "COA tidak ditemukan" });
       }
 
+      // Cek status COA
+      if (existingCoa.status === "approved") {
+        return res.status(403).json({
+          status: "error",
+          message: "COA has been Approved, Cant be Deleted!",
+        });
+      }
+
       // Buat record di deleted_coa
       await prisma.deleted_coa.create({
         data: {
@@ -367,12 +388,12 @@ const masterCoaController = {
           mfr: existingCoa.mfr,
           density: existingCoa.density,
           moisture: existingCoa.moisture,
-          carbonConten: existingCoa.carbonConten,
+          carbonContent: existingCoa.carbonContent,
           mfgDate: existingCoa.mfgDate,
           expiryDate: existingCoa.expiryDate,
-          anaysisDate: existingCoa.anaysisDate,
+          analysisDate: existingCoa.analysisDate,
           printedDate: existingCoa.printedDate,
-          forignMater: existingCoa.forignMater,
+          foreignMatter: existingCoa.foreignMatter,
           weightOfChips: existingCoa.weightOfChips,
           intrinsicViscosity: existingCoa.intrinsicViscosity,
           ashContent: existingCoa.ashContent,
@@ -398,7 +419,10 @@ const masterCoaController = {
       });
     } catch (error) {
       console.error("Error deleting COA:", error);
-      res.status(500).json({ message: "Terjadi kesalahan saat menghapus COA" });
+      res.status(500).json({
+        status: "error",
+        message: "Terjadi kesalahan saat menghapus COA",
+      });
     }
   },
 
@@ -542,7 +566,7 @@ const masterCoaController = {
         approvedDate: coa.approvedDate?.toISOString() || null,
         mfgDate: coa.mfgDate?.toISOString() || null,
         expiryDate: coa.expiryDate?.toISOString() || null,
-        anaysisDate: coa.anaysisDate?.toISOString() || null,
+        analysisDate: coa.analysisDate?.toISOString() || null,
         printedDate: coa.printedDate?.toISOString() || null,
       }));
 
@@ -607,12 +631,12 @@ const masterCoaController = {
           mfr: deletedCoa.mfr,
           density: deletedCoa.density,
           moisture: deletedCoa.moisture,
-          carbonConten: deletedCoa.carbonConten,
+          carbonContent: deletedCoa.carbonContent,
           mfgDate: deletedCoa.mfgDate,
           expiryDate: deletedCoa.expiryDate,
-          anaysisDate: deletedCoa.anaysisDate,
+          analysisDate: deletedCoa.analysisDate,
           printedDate: deletedCoa.printedDate,
-          forignMater: deletedCoa.forignMater,
+          foreignMatter: deletedCoa.foreignMatter,
           weightOfChips: deletedCoa.weightOfChips,
           intrinsicViscosity: deletedCoa.intrinsicViscosity,
           ashContent: deletedCoa.ashContent,

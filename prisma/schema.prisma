@@ -71,12 +71,12 @@ model master_coa {
   mfr               String?
   density           String?
   moisture          String?
-  carbonConten      String?
+  carbonContent     String?
   mfgDate           DateTime?
   expiryDate        DateTime?
-  anaysisDate       DateTime?
+  analysisDate      DateTime?
   printedDate       DateTime?
-  forignMater       String?
+  foreignMatter     String?
   weightOfChips     String?
   intrinsicViscosity String?
   ashContent        String?
@@ -105,12 +105,12 @@ model deleted_coa {
   mfr               String
   density           String
   moisture          String
-  carbonConten      String
+  carbonContent     String
   mfgDate           DateTime
   expiryDate        DateTime
-  anaysisDate       DateTime
+  analysisDate      DateTime
   printedDate       DateTime
-  forignMater       String
+  foreignMatter     String
   weightOfChips     String
   intrinsicViscosity String
   ashContent        String
