@@ -1,26 +1,33 @@
-const { verifyAccessToken } = require("../utils/jwt");
+const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
-
 const prisma = new PrismaClient();
 
-const authMiddleware = async (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-
-    if (!token) {
-      return res.status(401).json({ message: "Token tidak ditemukan" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        message: "Akses ditolak",
+        error: "Token tidak ditemukan",
+      });
     }
 
-    const decoded = verifyAccessToken(token);
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // Cek apakah user masih ada dan token version masih valid
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
     });
 
-    if (!user) {
-      return res.status(401).json({ message: "User tidak ditemukan" });
+    if (!user || user.tokenVersion !== decoded.tokenVersion) {
+      return res.status(401).json({
+        message: "Akses ditolak",
+        error: "Token tidak valid atau sudah expired",
+      });
     }
 
+    // Tambahkan data user ke request
     req.user = {
       id: user.id,
       username: user.username,
@@ -29,8 +36,25 @@ const authMiddleware = async (req, res, next) => {
 
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Token tidak valid" });
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        message: "Akses ditolak",
+        error: "Token tidak valid",
+      });
+    }
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        message: "Akses ditolak",
+        error: "Token sudah expired",
+      });
+    }
+    return res.status(500).json({
+      message: "Terjadi kesalahan pada server",
+      error: error.message,
+    });
   }
 };
 
-module.exports = authMiddleware;
+module.exports = {
+  verifyToken,
+};

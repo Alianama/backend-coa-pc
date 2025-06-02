@@ -95,6 +95,7 @@ const authController = {
       );
 
       res.json({
+        status: "success",
         message: "Token berhasil diperbarui",
         data: {
           accessToken,

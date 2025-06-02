@@ -143,11 +143,12 @@ const masterCoaController = {
               { costumerName: { contains: search } },
               { productName: { contains: search } },
               { lotNumber: { contains: search } },
+              { issueBy: { contains: search } },
             ],
           }
         : {};
 
-      statusFilter = {
+      const statusFilter = {
         OR: [
           { createdBy: req.user.id },
           { status: { in: ["approved", "need_approval"] } },
@@ -155,8 +156,7 @@ const masterCoaController = {
       };
 
       const where = {
-        ...baseFilter,
-        ...statusFilter,
+        AND: [baseFilter, statusFilter],
       };
 
       const [coas, total] = await Promise.all([
@@ -467,10 +467,10 @@ const masterCoaController = {
       // Add search condition if search parameter exists
       if (search && search.trim() !== "") {
         where.OR = [
-          { costumerName: { contains: search.trim(), mode: "insensitive" } },
-          { productName: { contains: search.trim(), mode: "insensitive" } },
-          { lotNumber: { contains: search.trim(), mode: "insensitive" } },
-          { issueBy: { contains: search.trim(), mode: "insensitive" } },
+          { costumerName: { contains: search.trim() } },
+          { productName: { contains: search.trim() } },
+          { lotNumber: { contains: search.trim() } },
+          { issueBy: { contains: search.trim() } },
         ];
       }
 
