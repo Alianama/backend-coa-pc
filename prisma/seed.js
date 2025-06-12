@@ -95,7 +95,9 @@ async function main() {
         description: "Pengguna biasa",
         permissions: {
           create: permissions
-            .filter((p) => ["CREATE_COA", "READ_COA"].includes(p.name))
+            .filter((p) =>
+              ["CREATE_COA", "READ_COA", "DELETE_COA"].includes(p.name)
+            )
             .map((permission) => ({
               permission: {
                 connect: { id: permission.id },

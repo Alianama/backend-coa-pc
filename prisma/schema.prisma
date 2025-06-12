@@ -20,10 +20,11 @@ model User {
   role          Role         @relation(fields: [roleId], references: [id])
   createdCoas   master_coa[] @relation("CreatedBy")
   approvedCoas  master_coa[] @relation("ApprovedBy")
-  deletedCoasCreated   deleted_coa[] @relation("DeletedCreatedBy")
-  deletedCoasApproved  deleted_coa[] @relation("DeletedApprovedBy")
-  deletedCoas          deleted_coa[] @relation("DeletedBy")
-  restoredCoas         deleted_coa[] @relation("RestoredBy")
+  deletedCoasCreated   deleted_coa[] @relation("DeletedCreatedBy", map: "deleted_coa_created_fkey")
+  deletedCoasApproved  deleted_coa[] @relation("DeletedApprovedBy", map: "deleted_coa_approved_fkey")
+  deletedCoas          deleted_coa[] @relation("DeletedBy", map: "deleted_coa_deleted_fkey")
+  restoredCoas         deleted_coa[] @relation("RestoredBy", map: "deleted_coa_restored_fkey")
+  logs Log[]
 }
 
 model Role {
@@ -57,12 +58,16 @@ model RolePermission {
   @@unique([roleId, permissionId])
 }
 
+model master_product {
+  id        Int @id @default((autoincrement()))
+}
+
 model master_coa {
   id                Int      @id @default(autoincrement())
   costumerName      String
   productName       String
   lotNumber         String
-  quantity          String
+  quantity          Float?
   letDownResin      String?
   pelletSize        String?
   pelletVisual      String?
@@ -89,45 +94,83 @@ model master_coa {
   updatedAt         DateTime @updatedAt
   creator           User     @relation("CreatedBy", fields: [createdBy], references: [id])
   approver          User?    @relation("ApprovedBy", fields: [approvedBy], references: [id])
+  logs Log[]
+  customer          master_customer? @relation("CustomerCoas", fields: [customerId], references: [id])
+  customerId        Int?
 }
 
 model deleted_coa {
   id                Int      @id @default(autoincrement())
   costumerName      String
   productName       String
-  letDownResin      String
   lotNumber         String
-  quantity          String
-  pelletSize        String
-  pelletVisual      String
-  color             String
-  dispersibility    String
-  mfr               String
-  density           String
-  moisture          String
-  carbonContent     String
-  mfgDate           DateTime
-  expiryDate        DateTime
-  analysisDate      DateTime
-  printedDate       DateTime
-  foreignMatter     String
-  weightOfChips     String
-  intrinsicViscosity String
-  ashContent        String
-  issueBy           String
+  letDownResin      String?
+  quantity          Float?
+  pelletSize        String?
+  pelletVisual      String?
+  color             String?
+  dispersibility    String?
+  mfr               String?
+  density           String?
+  moisture          String?
+  carbonContent     String?
+  mfgDate           DateTime?
+  expiryDate        DateTime?
+  analysisDate      DateTime?
+  printedDate       DateTime?
+  foreignMatter     String?
+  weightOfChips     String?
+  intrinsicViscosity String?
+  ashContent        String?
+  issueBy           String?
   approvedBy        Int?
   approvedDate      DateTime?
-  createdBy         Int
-  createdAt         DateTime
-  updatedAt         DateTime
-  deletedBy         Int
+  createdBy         Int?
+  createdAt         DateTime?
+  updatedAt         DateTime?
+  deletedBy         Int?
   deletedAt         DateTime @default(now())
   isRestored        Boolean  @default(false)
   restoredAt        DateTime?
   restoredBy        Int?
   originalId        Int      @unique
-  creator           User     @relation("DeletedCreatedBy", fields: [createdBy], references: [id])
+  creator           User?    @relation("DeletedCreatedBy", fields: [createdBy], references: [id])
   approver          User?    @relation("DeletedApprovedBy", fields: [approvedBy], references: [id])
-  deleter           User     @relation("DeletedBy", fields: [deletedBy], references: [id])
+  deleter           User?    @relation("DeletedBy", fields: [deletedBy], references: [id])
   restorer          User?    @relation("RestoredBy", fields: [restoredBy], references: [id])
+}
+
+model master_customer {
+  id                Int      @id @default(autoincrement())
+  name              String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  coas              master_coa[] @relation("CustomerCoas")
+  mandatoryFields   MandatoryField[]
+  @@unique([name])
+}
+
+model MandatoryField {
+  id          Int      @id @default(autoincrement())
+  fieldName   String   // Nama kolom dari master_coa (contoh: 'costumerName', 'productName', dll)
+  customerId  Int
+  customer    master_customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([customerId, fieldName])
+  @@index([fieldName])
+}
+
+model Log {
+  id          Int      @id @default(autoincrement())
+  action      String   
+  description String  
+  coaId       Int?     
+  userId      Int      
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  coa         master_coa? @relation(fields: [coaId], references: [id])
+
+  @@map("logs")
 }

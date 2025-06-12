@@ -1,55 +1,40 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+// Fungsi helper untuk membuat log
+async function createLog(action, description, coaId, userId) {
+  try {
+    // Jika coaId adalah null atau undefined, kita tidak perlu menyertakannya
+    const logData = {
+      action,
+      description,
+      userId,
+    };
+
+    // Hanya tambahkan coaId jika ada dan valid
+    if (coaId) {
+      logData.coaId = coaId;
+    }
+
+    const log = await prisma.log.create({
+      data: logData,
+    });
+    console.log(`Log created: ${action} - ${description}`);
+    return log;
+  } catch (error) {
+    console.error("Error creating log:", error);
+    // Jangan throw error, hanya log saja
+    return null;
+  }
+}
+
 const masterCoaController = {
   // Create new COA
   async create(req, res) {
     try {
-      const {
-        costumerName,
-        productName,
-        letDownResin,
-        lotNumber,
-        quantity,
-        pelletSize,
-        pelletVisual,
-        color,
-        dispersibility,
-        mfr,
-        density,
-        moisture,
-        carbonContent,
-        mfgDate,
-        expiryDate,
-        analysisDate,
-        printedDate,
-        foreignMatter,
-        weightOfChips,
-        intrinsicViscosity,
-        ashContent,
-      } = req.body;
-
-      // Validasi data wajib
-      if (!costumerName || !productName || !lotNumber || !quantity) {
-        return res.status(400).json({
-          status: "error",
-          message: "Data tidak lengkap",
-          error:
-            "costumerName, productName, lotNumber, dan quantity harus diisi",
-        });
-      }
-
-      // Validasi format tanggal
-      const dates = { mfgDate, expiryDate, analysisDate, printedDate };
-      for (const [key, value] of Object.entries(dates)) {
-        if (value && isNaN(new Date(value).getTime())) {
-          return res.status(400).json({
-            status: "error",
-            message: "Format tanggal tidak valid",
-            error: `Format tanggal ${key} tidak valid`,
-          });
-        }
-      }
+      const coaData = Array.isArray(req.body) ? req.body : [req.body];
+      const results = [];
+      const errors = [];
 
       // Ambil data user yang sedang login
       const currentUser = await prisma.user.findUnique({
@@ -65,61 +50,164 @@ const masterCoaController = {
         });
       }
 
-      const coa = await prisma.master_coa.create({
-        data: {
-          costumerName,
+      for (const data of coaData) {
+        const {
+          customerId,
           productName,
-          letDownResin: letDownResin || null,
+          letDownResin,
           lotNumber,
-          quantity: quantity.toString(),
-          pelletSize: pelletSize || null,
-          pelletVisual: pelletVisual || null,
-          color: color || null,
-          dispersibility: dispersibility || null,
-          mfr: mfr || null,
-          density: density || null,
-          moisture: moisture || null,
-          carbonContent: carbonContent || null,
-          status: "draft",
-          mfgDate: mfgDate ? new Date(mfgDate) : null,
-          expiryDate: expiryDate ? new Date(expiryDate) : null,
-          analysisDate: analysisDate ? new Date(analysisDate) : null,
-          printedDate: printedDate ? new Date(printedDate) : null,
-          foreignMatter: foreignMatter || null,
-          weightOfChips: weightOfChips || null,
-          intrinsicViscosity: intrinsicViscosity || null,
-          ashContent: ashContent || null,
-          issueBy: currentUser.username,
-          creator: {
-            connect: {
-              id: req.user.id,
-            },
-          },
-        },
-        include: {
-          creator: {
-            select: {
-              username: true,
-            },
-          },
-        },
-      });
+          quantity,
+          pelletSize,
+          pelletVisual,
+          color,
+          dispersibility,
+          mfr,
+          density,
+          moisture,
+          carbonContent,
+          mfgDate,
+          expiryDate,
+          analysisDate,
+          printedDate,
+          foreignMatter,
+          weightOfChips,
+          intrinsicViscosity,
+          ashContent,
+        } = data;
 
-      // Transform dates to ISO string
-      const transformedCoa = {
-        ...coa,
-        createdAt: coa.createdAt?.toISOString(),
-        updatedAt: coa.updatedAt?.toISOString(),
-        mfgDate: coa.mfgDate?.toISOString(),
-        expiryDate: coa.expiryDate?.toISOString(),
-        analysisDate: coa.analysisDate?.toISOString(),
-        printedDate: coa.printedDate?.toISOString(),
-      };
+        // Validasi data wajib
+        if (!customerId) {
+          errors.push({
+            data,
+            error: "Customer Name harus diisi",
+          });
+          continue;
+        }
+
+        if (!productName) {
+          errors.push({
+            data,
+            error: "Product Name harus diisi",
+          });
+          continue;
+        }
+
+        if (!lotNumber) {
+          errors.push({
+            data,
+            error: "Lot Number harus diisi",
+          });
+          continue;
+        }
+
+        // Validasi customer exists
+        const customer = await prisma.master_customer.findUnique({
+          where: { id: parseInt(customerId) },
+        });
+
+        if (!customer) {
+          errors.push({
+            data,
+            error: `Customer dengan ID ${customerId} tidak ditemukan`,
+          });
+          continue;
+        }
+
+        // Validasi format tanggal
+        const dates = { mfgDate, expiryDate, analysisDate, printedDate };
+        const dateErrors = [];
+
+        for (const [key, value] of Object.entries(dates)) {
+          if (value && isNaN(new Date(value).getTime())) {
+            dateErrors.push(key);
+          }
+        }
+
+        if (dateErrors.length > 0) {
+          errors.push({
+            data,
+            error: `Format tanggal tidak valid untuk: ${dateErrors.join(", ")}`,
+          });
+          continue;
+        }
+
+        try {
+          const coa = await prisma.master_coa.create({
+            data: {
+              customer: {
+                connect: {
+                  id: parseInt(customerId),
+                },
+              },
+              costumerName: customer.name,
+              productName,
+              letDownResin: letDownResin || null,
+              lotNumber,
+              quantity: parseFloat(quantity) || 0,
+              pelletSize: pelletSize || null,
+              pelletVisual: pelletVisual || null,
+              color: color || null,
+              dispersibility: dispersibility || null,
+              mfr: mfr || null,
+              density: density || null,
+              moisture: moisture || null,
+              carbonContent: carbonContent || null,
+              status: "need_approval",
+              mfgDate: mfgDate ? new Date(mfgDate) : null,
+              expiryDate: expiryDate ? new Date(expiryDate) : null,
+              analysisDate: analysisDate ? new Date(analysisDate) : null,
+              printedDate: printedDate ? new Date(printedDate) : null,
+              foreignMatter: foreignMatter || null,
+              weightOfChips: weightOfChips || null,
+              intrinsicViscosity: intrinsicViscosity || null,
+              ashContent: ashContent || null,
+              issueBy: currentUser.username,
+              creator: {
+                connect: {
+                  id: req.user.id,
+                },
+              },
+            },
+            include: {
+              creator: {
+                select: {
+                  username: true,
+                },
+              },
+              customer: true,
+            },
+          });
+
+          // Buat log untuk pembuatan COA
+          await createLog(
+            "create",
+            `COA baru dibuat untuk ${coa.customer.name} - ${coa.productName} (Lot: ${coa.lotNumber})`,
+            coa.id,
+            req.user.id
+          );
+
+          results.push(coa);
+        } catch (error) {
+          errors.push({
+            data,
+            error: error.message,
+          });
+        }
+      }
+
+      if (errors.length > 0) {
+        return res.status(400).json({
+          status: "error",
+          message: errors[errors.length - 1].error,
+          errors: errors,
+          results: results.length > 0 ? results : undefined,
+        });
+      }
 
       res.status(201).json({
         status: "success",
         message: "COA berhasil dibuat",
-        data: transformedCoa,
+        data: results,
       });
     } catch (error) {
       console.error("Error creating COA:", error);
@@ -140,10 +228,10 @@ const masterCoaController = {
       const baseFilter = search
         ? {
             OR: [
-              { costumerName: { contains: search } },
               { productName: { contains: search } },
               { lotNumber: { contains: search } },
               { issueBy: { contains: search } },
+              { customer: { name: { contains: search } } },
             ],
           }
         : {};
@@ -176,6 +264,7 @@ const masterCoaController = {
                 username: true,
               },
             },
+            customer: true,
           },
         }),
         prisma.master_coa.count({ where }),
@@ -198,6 +287,7 @@ const masterCoaController = {
       res.status(500).json({
         status: "error",
         message: "Terjadi kesalahan saat mengambil data COA",
+        error: error.message,
       });
     }
   },
@@ -206,21 +296,8 @@ const masterCoaController = {
   async getById(req, res) {
     try {
       const { id } = req.params;
-
-      // Validasi ID
-      if (!id || isNaN(parseInt(id))) {
-        return res.status(400).json({
-          status: "error",
-          message: "ID tidak valid",
-          error: "ID harus berupa angka",
-        });
-      }
-
-      const coaId = parseInt(id);
       const coa = await prisma.master_coa.findUnique({
-        where: {
-          id: coaId,
-        },
+        where: { id: parseInt(id) },
         include: {
           creator: {
             select: {
@@ -232,6 +309,7 @@ const masterCoaController = {
               username: true,
             },
           },
+          customer: true,
         },
       });
 
@@ -239,26 +317,13 @@ const masterCoaController = {
         return res.status(404).json({
           status: "error",
           message: "COA tidak ditemukan",
-          error: `COA dengan ID ${coaId} tidak ditemukan`,
         });
       }
-
-      // Transform dates to ISO string
-      const transformedCoa = {
-        ...coa,
-        createdAt: coa.createdAt?.toISOString(),
-        updatedAt: coa.updatedAt?.toISOString(),
-        approvedDate: coa.approvedDate?.toISOString(),
-        mfgDate: coa.mfgDate?.toISOString(),
-        expiryDate: coa.expiryDate?.toISOString(),
-        analysisDate: coa.analysisDate?.toISOString(),
-        printedDate: coa.printedDate?.toISOString(),
-      };
 
       res.json({
         status: "success",
         message: "Data COA berhasil diambil",
-        data: transformedCoa,
+        data: coa,
       });
     } catch (error) {
       console.error("Error fetching COA:", error);
@@ -275,7 +340,7 @@ const masterCoaController = {
     try {
       const { id } = req.params;
       const {
-        costumerName,
+        customerId,
         productName,
         letDownResin,
         lotNumber,
@@ -298,16 +363,37 @@ const masterCoaController = {
         ashContent,
       } = req.body;
 
+      // Validasi customer exists jika customerId diupdate
+      let customer = null;
+      if (customerId) {
+        customer = await prisma.master_customer.findUnique({
+          where: { id: parseInt(customerId) },
+        });
+
+        if (!customer) {
+          return res.status(404).json({
+            status: "error",
+            message: "Customer tidak ditemukan",
+          });
+        }
+      }
+
       const coa = await prisma.master_coa.update({
         where: {
           id: parseInt(id),
         },
         data: {
-          costumerName,
+          ...(customerId && {
+            customer: {
+              connect: {
+                id: parseInt(customerId),
+              },
+            },
+          }),
           productName,
           letDownResin,
           lotNumber,
-          quantity: quantity.toString(),
+          quantity: parseFloat(quantity) || 0,
           pelletSize,
           pelletVisual,
           color,
@@ -316,10 +402,10 @@ const masterCoaController = {
           density,
           moisture,
           carbonContent,
-          mfgDate: new Date(mfgDate),
-          expiryDate: new Date(expiryDate),
-          analysisDate: new Date(analysisDate),
-          printedDate: new Date(printedDate),
+          mfgDate: mfgDate ? new Date(mfgDate) : null,
+          expiryDate: expiryDate ? new Date(expiryDate) : null,
+          analysisDate: analysisDate ? new Date(analysisDate) : null,
+          printedDate: printedDate ? new Date(printedDate) : null,
           foreignMatter,
           weightOfChips,
           intrinsicViscosity,
@@ -336,6 +422,7 @@ const masterCoaController = {
               username: true,
             },
           },
+          customer: true,
         },
       });
 
@@ -349,6 +436,7 @@ const masterCoaController = {
       res.status(500).json({
         status: "error",
         message: "Terjadi kesalahan saat memperbarui COA",
+        error: error.message,
       });
     }
   },
@@ -359,10 +447,16 @@ const masterCoaController = {
       const { id } = req.params;
       const existingCoa = await prisma.master_coa.findUnique({
         where: { id: parseInt(id) },
+        include: {
+          customer: true,
+        },
       });
 
       if (!existingCoa) {
-        return res.status(404).json({ message: "COA tidak ditemukan" });
+        return res.status(404).json({
+          status: "error",
+          message: "COA tidak ditemukan",
+        });
       }
 
       // Cek status COA
@@ -373,36 +467,61 @@ const masterCoaController = {
         });
       }
 
-      // Buat record di deleted_coa
+      if (existingCoa.createdBy !== req.user.id) {
+        return res.status(403).json({
+          status: "error",
+          message:
+            "You are not allowed to delete this COA, Only Creator Can Delete",
+        });
+      }
+
+      // Cek apakah COA sudah pernah dihapus sebelumnya
+      const existingDeletedCoa = await prisma.deleted_coa.findFirst({
+        where: { originalId: existingCoa.id },
+      });
+
+      if (existingDeletedCoa) {
+        return res.status(400).json({
+          status: "error",
+          message: "COA sudah pernah dihapus sebelumnya",
+        });
+      }
+
+      // Buat log sebelum menghapus
+      await createLog(
+        "delete",
+        `COA dihapus: ${existingCoa.customer.name} - ${existingCoa.productName} (Lot: ${existingCoa.lotNumber})`,
+        existingCoa.id,
+        req.user.id
+      );
+
+      // Buat salinan COA di tabel deleted_coa
       await prisma.deleted_coa.create({
         data: {
-          costumerName: existingCoa.costumerName || "",
-          productName: existingCoa.productName || "",
-          letDownResin: existingCoa.letDownResin || "",
-          lotNumber: existingCoa.lotNumber || "",
-          quantity: existingCoa.quantity || "",
-          pelletSize: existingCoa.pelletSize || "",
-          pelletVisual: existingCoa.pelletVisual || "",
-          color: existingCoa.color || "",
-          dispersibility: existingCoa.dispersibility || "",
-          mfr: existingCoa.mfr || "",
-          density: existingCoa.density || "",
-          moisture: existingCoa.moisture || "",
-          carbonContent: existingCoa.carbonContent || "",
-          mfgDate: existingCoa.mfgDate || new Date(),
-          expiryDate: existingCoa.expiryDate || new Date(),
-          analysisDate: existingCoa.analysisDate || new Date(),
-          printedDate: existingCoa.printedDate || new Date(),
-          foreignMatter: existingCoa.foreignMatter || "",
-          weightOfChips: existingCoa.weightOfChips || "",
-          intrinsicViscosity: existingCoa.intrinsicViscosity || "",
-          ashContent: existingCoa.ashContent || "",
-          issueBy: existingCoa.issueBy || "",
-          approvedDate: existingCoa.approvedDate || null,
-          createdAt: existingCoa.createdAt || new Date(),
-          updatedAt: existingCoa.updatedAt || new Date(),
-          deletedAt: new Date(),
-          isRestored: false,
+          costumerName: existingCoa.costumerName,
+          productName: existingCoa.productName,
+          lotNumber: existingCoa.lotNumber,
+          quantity: existingCoa.quantity,
+          letDownResin: existingCoa.letDownResin,
+          pelletSize: existingCoa.pelletSize,
+          pelletVisual: existingCoa.pelletVisual,
+          color: existingCoa.color,
+          dispersibility: existingCoa.dispersibility,
+          mfr: existingCoa.mfr,
+          density: existingCoa.density,
+          moisture: existingCoa.moisture,
+          carbonContent: existingCoa.carbonContent,
+          mfgDate: existingCoa.mfgDate,
+          expiryDate: existingCoa.expiryDate,
+          analysisDate: existingCoa.analysisDate,
+          printedDate: existingCoa.printedDate,
+          foreignMatter: existingCoa.foreignMatter,
+          weightOfChips: existingCoa.weightOfChips,
+          intrinsicViscosity: existingCoa.intrinsicViscosity,
+          ashContent: existingCoa.ashContent,
+          issueBy: existingCoa.issueBy,
+          createdAt: existingCoa.createdAt,
+          updatedAt: existingCoa.updatedAt,
           originalId: existingCoa.id,
           creator: {
             connect: {
@@ -421,6 +540,8 @@ const masterCoaController = {
                 },
               }
             : undefined,
+          isRestored: false,
+          deletedAt: new Date(),
         },
       });
 
@@ -438,6 +559,7 @@ const masterCoaController = {
       res.status(500).json({
         status: "error",
         message: "Terjadi kesalahan saat menghapus COA",
+        error: error.message,
       });
     }
   },
@@ -445,102 +567,31 @@ const masterCoaController = {
   // Get all deleted COAs
   async getDeleted(req, res) {
     try {
-      const {
-        page = 1,
-        limit = 10,
-        search = "",
-        startDate,
-        endDate,
-        sortBy = "deletedAt",
-        sortOrder = "desc",
-      } = req.query;
+      const { page = 1, limit = 100, search = "" } = req.query;
+      const skip = (page - 1) * limit;
 
-      // Validasi parameter
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
+      const baseFilter = search
+        ? {
+            OR: [
+              { costumerName: { contains: search } },
+              { productName: { contains: search } },
+              { lotNumber: { contains: search } },
+              { issueBy: { contains: search } },
+            ],
+          }
+        : {};
 
-      if (isNaN(pageNum) || pageNum < 1) {
-        return res.status(400).json({
-          message: "Parameter page tidak valid",
-          error: "Page harus berupa angka positif",
-        });
-      }
-
-      if (isNaN(limitNum) || limitNum < 1) {
-        return res.status(400).json({
-          message: "Parameter limit tidak valid",
-          error: "Limit harus berupa angka positif",
-        });
-      }
-
-      const skip = (pageNum - 1) * limitNum;
-
-      // Build where clause
-      let where = {
+      const where = {
+        ...baseFilter,
         isRestored: false,
       };
 
-      // Add search condition if search parameter exists
-      if (search && search.trim() !== "") {
-        where.OR = [
-          { costumerName: { contains: search.trim() } },
-          { productName: { contains: search.trim() } },
-          { lotNumber: { contains: search.trim() } },
-          { issueBy: { contains: search.trim() } },
-        ];
-      }
-
-      // Add date range filter if provided
-      if (startDate || endDate) {
-        where.deletedAt = {};
-
-        if (startDate) {
-          const start = new Date(startDate + "T00:00:00.000Z");
-          if (isNaN(start.getTime())) {
-            return res.status(400).json({
-              message: "Parameter startDate tidak valid",
-              error: "Format tanggal tidak valid",
-            });
-          }
-          where.deletedAt.gte = start;
-        }
-
-        if (endDate) {
-          const end = new Date(endDate + "T23:59:59.999Z");
-          if (isNaN(end.getTime())) {
-            return res.status(400).json({
-              message: "Parameter endDate tidak valid",
-              error: "Format tanggal tidak valid",
-            });
-          }
-          where.deletedAt.lte = end;
-        }
-      }
-
-      // Validate sortBy field
-      const allowedSortFields = [
-        "deletedAt",
-        "costumerName",
-        "productName",
-        "lotNumber",
-        "issueBy",
-        "createdAt",
-        "updatedAt",
-      ];
-      const finalSortBy = allowedSortFields.includes(sortBy)
-        ? sortBy
-        : "deletedAt";
-      const finalSortOrder = sortOrder.toLowerCase() === "asc" ? "asc" : "desc";
-
-      // Get deleted COAs with pagination
       const [deletedCoas, total] = await Promise.all([
         prisma.deleted_coa.findMany({
           where,
-          skip,
-          take: limitNum,
-          orderBy: {
-            [finalSortBy]: finalSortOrder,
-          },
+          skip: parseInt(skip),
+          take: parseInt(limit),
+          orderBy: { deletedAt: "desc" },
           include: {
             creator: {
               select: {
@@ -567,45 +618,21 @@ const masterCoaController = {
         prisma.deleted_coa.count({ where }),
       ]);
 
-      // Transform data to include usernames and format dates
-      const transformedData = deletedCoas.map((coa) => ({
-        ...coa,
-        creatorName: coa.creator?.username || "Unknown",
-        approverName: coa.approver?.username || "Not Approved",
-        deleterName: coa.deleter?.username || "Unknown",
-        restorerName: coa.restorer?.username || null,
-        // Format dates to ISO string
-        createdAt: coa.createdAt?.toISOString() || null,
-        updatedAt: coa.updatedAt?.toISOString() || null,
-        deletedAt: coa.deletedAt?.toISOString() || null,
-        restoredAt: coa.restoredAt?.toISOString() || null,
-        approvedDate: coa.approvedDate?.toISOString() || null,
-        mfgDate: coa.mfgDate?.toISOString() || null,
-        expiryDate: coa.expiryDate?.toISOString() || null,
-        analysisDate: coa.analysisDate?.toISOString() || null,
-        printedDate: coa.printedDate?.toISOString() || null,
-      }));
-
       res.json({
+        status: "success",
         message: "Data COA yang dihapus berhasil diambil",
-        data: transformedData,
+        data: deletedCoas,
         pagination: {
           total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
-        },
-        filters: {
-          search: search.trim(),
-          startDate,
-          endDate,
-          sortBy: finalSortBy,
-          sortOrder: finalSortOrder,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(total / limit),
         },
       });
     } catch (error) {
       console.error("Error fetching deleted COAs:", error);
       res.status(500).json({
+        status: "error",
         message: "Terjadi kesalahan saat mengambil data COA yang dihapus",
         error: error.message,
       });
@@ -621,20 +648,34 @@ const masterCoaController = {
       });
 
       if (!deletedCoa) {
-        return res
-          .status(404)
-          .json({ message: "COA yang dihapus tidak ditemukan" });
+        return res.status(404).json({
+          status: "error",
+          message: "COA yang dihapus tidak ditemukan",
+        });
       }
 
       if (deletedCoa.isRestored) {
-        return res
-          .status(400)
-          .json({ message: "COA sudah dipulihkan sebelumnya" });
+        return res.status(400).json({
+          status: "error",
+          message: "COA sudah dipulihkan sebelumnya",
+        });
       }
 
+      // Cari customer berdasarkan nama
+      const customer = await prisma.master_customer.findFirst({
+        where: { name: deletedCoa.costumerName },
+      });
+
       // Buat COA baru dari data yang dihapus
-      await prisma.master_coa.create({
+      const restoredCoa = await prisma.master_coa.create({
         data: {
+          customer: customer
+            ? {
+                connect: {
+                  id: customer.id,
+                },
+              }
+            : undefined,
           costumerName: deletedCoa.costumerName,
           productName: deletedCoa.productName,
           letDownResin: deletedCoa.letDownResin,
@@ -660,6 +701,14 @@ const masterCoaController = {
           approvedBy: deletedCoa.approvedBy,
           approvedDate: deletedCoa.approvedDate,
           createdBy: deletedCoa.createdBy,
+          status: "draft",
+        },
+        include: {
+          customer: {
+            include: {
+              mandatoryFields: true,
+            },
+          },
         },
       });
 
@@ -673,14 +722,26 @@ const masterCoaController = {
         },
       });
 
+      // Buat log untuk restore COA
+      await createLog(
+        "restore",
+        `COA dipulihkan: ${restoredCoa.costumerName} - ${restoredCoa.productName} (Lot: ${restoredCoa.lotNumber})`,
+        restoredCoa.id,
+        req.user.id
+      );
+
       res.json({
+        status: "success",
         message: "COA berhasil dipulihkan",
+        data: restoredCoa,
       });
     } catch (error) {
       console.error("Error restoring COA:", error);
-      res
-        .status(500)
-        .json({ message: "Terjadi kesalahan saat memulihkan COA" });
+      res.status(500).json({
+        status: "error",
+        message: "Terjadi kesalahan saat memulihkan COA",
+        error: error.message,
+      });
     }
   },
 
@@ -688,6 +749,24 @@ const masterCoaController = {
   async permanentDelete(req, res) {
     try {
       const { id } = req.params;
+      const deletedCoa = await prisma.deleted_coa.findUnique({
+        where: { id: parseInt(id) },
+      });
+
+      if (!deletedCoa) {
+        return res.status(404).json({
+          message: "COA yang dihapus tidak ditemukan",
+        });
+      }
+
+      // Buat log sebelum menghapus permanen
+      await createLog(
+        "permanent_delete",
+        `COA dihapus permanen: ${deletedCoa.costumerName} - ${deletedCoa.productName} (Lot: ${deletedCoa.lotNumber})`,
+        null, // Tidak perlu coaId karena COA sudah dihapus
+        req.user.id
+      );
+
       await prisma.deleted_coa.delete({
         where: { id: parseInt(id) },
       });
@@ -707,27 +786,72 @@ const masterCoaController = {
   async approve(req, res) {
     try {
       const { id } = req.params;
-      const coa = await prisma.master_coa.update({
-        where: {
-          id: parseInt(id),
-        },
-        data: {
-          approvedBy: req.user.id,
-          status: "approved",
-          approvedDate: new Date(),
+      const coa = await prisma.master_coa.findUnique({
+        where: { id: parseInt(id) },
+        include: {
+          customer: true,
         },
       });
 
+      if (!coa) {
+        return res.status(404).json({
+          status: "error",
+          message: "COA tidak ditemukan",
+        });
+      }
+
+      if (coa.status === "approved") {
+        return res.status(400).json({
+          status: "error",
+          message: "COA sudah diapprove sebelumnya",
+        });
+      }
+
+      const approvedCoa = await prisma.master_coa.update({
+        where: { id: parseInt(id) },
+        data: {
+          status: "approved",
+          approvedBy: req.user.id,
+          approvedDate: new Date(),
+        },
+        include: {
+          creator: {
+            select: {
+              username: true,
+            },
+          },
+          approver: {
+            select: {
+              username: true,
+            },
+          },
+          customer: {
+            include: {
+              mandatoryFields: true,
+            },
+          },
+        },
+      });
+
+      // Buat log untuk approval COA
+      await createLog(
+        "approve",
+        `COA diapprove untuk ${coa.costumerName} - ${coa.productName} (Lot: ${coa.lotNumber})`,
+        coa.id,
+        req.user.id
+      );
+
       res.json({
         status: "success",
-        message: "COA berhasil disetujui",
-        data: coa,
+        message: "COA berhasil diapprove",
+        data: approvedCoa,
       });
     } catch (error) {
       console.error("Error approving COA:", error);
       res.status(500).json({
         status: "error",
-        message: "Terjadi kesalahan saat menyetujui COA",
+        message: "Terjadi kesalahan saat approve COA",
+        error: error.message,
       });
     }
   },
@@ -735,8 +859,6 @@ const masterCoaController = {
   async requestApproval(req, res) {
     try {
       const { id } = req.params;
-
-      // Cek apakah COA ada
       const existingCoa = await prisma.master_coa.findUnique({
         where: { id: parseInt(id) },
       });
@@ -773,6 +895,14 @@ const masterCoaController = {
           status: "need_approval",
         },
       });
+
+      // Buat log untuk permintaan persetujuan COA
+      await createLog(
+        "request_approval",
+        `Permintaan persetujuan COA: ${coa.costumerName} - ${coa.productName} (Lot: ${coa.lotNumber})`,
+        coa.id,
+        req.user.id
+      );
 
       res.json({
         status: "success",
