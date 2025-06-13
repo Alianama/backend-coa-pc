@@ -7,7 +7,8 @@ const VALID_COA_FIELDS = [
   "lotNumber",
   "quantity",
   "letDownResin",
-  "pelletSize",
+  "pelletLength",
+  "pelletDimension",
   "pelletVisual",
   "color",
   "dispersibility",
@@ -23,6 +24,11 @@ const VALID_COA_FIELDS = [
   "weightOfChips",
   "intrinsicViscosity",
   "ashContent",
+  "heatStability",
+  "lightFastness",
+  "granule",
+  "deltaE",
+  "macaroni",
 ];
 
 async function createLog(action, description, coaId, userId) {
@@ -56,20 +62,25 @@ module.exports = {
     const { name, mandatoryFields } = req.body;
     try {
       if (!name) {
-        return res.status(400).json({ error: "Name is required" });
+        return res.status(400).json({
+          status: "error",
+          message: "Name is required",
+        });
       }
 
       if (!Array.isArray(mandatoryFields)) {
-        return res
-          .status(400)
-          .json({ error: "Mandatory fields must be an array" });
+        return res.status(400).json({
+          status: "error",
+          message: "Mandatory fields must be an array",
+        });
       }
 
       // Validasi setiap field
       for (const field of mandatoryFields) {
         if (!VALID_COA_FIELDS.includes(field)) {
           return res.status(400).json({
-            error: `Invalid field name: ${field}`,
+            status: "error",
+            message: `Invalid field name: ${field}`,
             validFields: VALID_COA_FIELDS,
           });
         }
@@ -109,14 +120,23 @@ module.exports = {
         req.user?.id
       );
 
-      res.status(201).json(result);
+      res.status(201).json({
+        status: "success",
+        message: "Customer berhasil dibuat",
+        data: result,
+      });
     } catch (error) {
       if (error.code === "P2002") {
-        return res.status(400).json({ error: "Customer name already exists" });
+        return res.status(400).json({
+          status: "error",
+          message: "Customer name already exists",
+        });
       }
-      res
-        .status(500)
-        .json({ error: "Failed to create customer", details: error.message });
+      res.status(500).json({
+        status: "error",
+        message: "Failed to create customer",
+        details: error.message,
+      });
     }
   },
 
@@ -202,7 +222,10 @@ module.exports = {
     try {
       const customerId = parseInt(id);
       if (isNaN(customerId)) {
-        return res.status(400).json({ error: "Invalid customer ID" });
+        return res.status(400).json({
+          status: "error",
+          message: "Invalid customer ID",
+        });
       }
 
       // Validasi customer exists
@@ -211,21 +234,26 @@ module.exports = {
       });
 
       if (!existingCustomer) {
-        return res.status(404).json({ error: "Customer not found" });
+        return res.status(404).json({
+          status: "error",
+          message: "Customer not found",
+        });
       }
 
       // Validasi mandatory fields jika ada
       if (mandatoryFields) {
         if (!Array.isArray(mandatoryFields)) {
-          return res
-            .status(400)
-            .json({ error: "Mandatory fields must be an array" });
+          return res.status(400).json({
+            status: "error",
+            message: "Mandatory fields must be an array",
+          });
         }
 
         for (const field of mandatoryFields) {
           if (!VALID_COA_FIELDS.includes(field)) {
             return res.status(400).json({
-              error: `Invalid field name: ${field}`,
+              status: "error",
+              message: `Invalid field name: ${field}`,
               validFields: VALID_COA_FIELDS,
             });
           }
@@ -275,13 +303,21 @@ module.exports = {
         req.user?.id
       );
 
-      res.status(200).json(result);
+      res.status(200).json({
+        status: "success",
+        message: "Customer berhasil diupdate",
+        data: result,
+      });
     } catch (error) {
       if (error.code === "P2002") {
-        return res.status(400).json({ error: "Customer name already exists" });
+        return res.status(400).json({
+          status: "error",
+          message: "Customer name already exists",
+        });
       }
       res.status(500).json({
-        error: "Failed to update customer",
+        status: "error",
+        message: "Failed to update customer",
         details: error.message,
       });
     }
@@ -290,6 +326,18 @@ module.exports = {
   deleteCustomer: async (req, res) => {
     const { id } = req.params;
     try {
+      // Cek apakah customer dengan id tersebut ada
+      const existingCustomer = await prisma.master_customer.findUnique({
+        where: { id: parseInt(id) },
+      });
+
+      if (!existingCustomer) {
+        return res.status(404).json({
+          status: "error",
+          message: "Customer tidak ditemukan",
+        });
+      }
+
       const customer = await prisma.master_customer.delete({
         where: { id: parseInt(id) },
       });
@@ -302,141 +350,29 @@ module.exports = {
         req.user?.id
       );
 
-      res.status(200).json(customer);
+      res.status(200).json({
+        status: "success",
+        message: "Customer berhasil dihapus",
+        data: customer,
+      });
     } catch (error) {
-      res
-        .status(500)
-        .json({ error: "Failed to delete customer", details: error.message });
+      res.status(500).json({
+        status: "error",
+        message: "Failed to delete customer",
+        details: error.message,
+      });
     }
   },
 
-  // createMandatoryField: async (req, res) => {
-  //   const { customerId, fieldName } = req.body;
-  //   try {
-  //     if (!customerId || !fieldName) {
-  //       return res
-  //         .status(400)
-  //         .json({ error: "Customer ID and field name are required" });
-  //     }
-
-  //     if (!VALID_COA_FIELDS.includes(fieldName)) {
-  //       return res.status(400).json({
-  //         error: "Invalid field name",
-  //         validFields: VALID_COA_FIELDS,
-  //       });
-  //     }
-
-  //     const customer = await prisma.master_customer.findUnique({
-  //       where: { id: parseInt(customerId) },
-  //     });
-
-  //     if (!customer) {
-  //       return res.status(404).json({ error: "Customer not found" });
-  //     }
-
-  //     const mandatoryField = await prisma.mandatoryField.create({
-  //       data: {
-  //         customerId: parseInt(customerId),
-  //         fieldName,
-  //       },
-  //     });
-  //     res.status(201).json(mandatoryField);
-  //   } catch (error) {
-  //     if (error.code === "P2002") {
-  //       return res
-  //         .status(400)
-  //         .json({ error: "This field is already mandatory for this customer" });
-  //     }
-  //     res.status(500).json({
-  //       error: "Failed to create mandatory field",
-  //       details: error.message,
-  //     });
-  //   }
-  // },
-
-  // updateMandatoryField: async (req, res) => {
-  //   const { id } = req.params;
-  //   const { fieldName } = req.body;
-  //   try {
-  //     if (!fieldName) {
-  //       return res.status(400).json({ error: "Field name is required" });
-  //     }
-
-  //     if (!VALID_COA_FIELDS.includes(fieldName)) {
-  //       return res.status(400).json({
-  //         error: "Invalid field name",
-  //         validFields: VALID_COA_FIELDS,
-  //       });
-  //     }
-
-  //     const mandatoryField = await prisma.mandatoryField.update({
-  //       where: { id: parseInt(id) },
-  //       data: { fieldName },
-  //     });
-  //     res.status(200).json(mandatoryField);
-  //   } catch (error) {
-  //     if (error.code === "P2025") {
-  //       return res.status(404).json({ error: "Mandatory field not found" });
-  //     }
-  //     if (error.code === "P2002") {
-  //       return res
-  //         .status(400)
-  //         .json({ error: "This field name already exists for this customer" });
-  //     }
-  //     res.status(500).json({
-  //       error: "Failed to update mandatory field",
-  //       details: error.message,
-  //     });
-  //   }
-  // },
-
-  // deleteMandatoryField: async (req, res) => {
-  //   const { id } = req.params;
-  //   try {
-  //     const mandatoryField = await prisma.mandatoryField.delete({
-  //       where: { id: parseInt(id) },
-  //     });
-  //     res.status(200).json(mandatoryField);
-  //   } catch (error) {
-  //     if (error.code === "P2025") {
-  //       return res.status(404).json({ error: "Mandatory field not found" });
-  //     }
-  //     res.status(500).json({
-  //       error: "Failed to delete mandatory field",
-  //       details: error.message,
-  //     });
-  //   }
-  // },
-
-  // getMandatoryFields: async (req, res) => {
-  //   const { customerId } = req.params;
-  //   try {
-  //     const customer = await prisma.master_customer.findUnique({
-  //       where: { id: parseInt(customerId) },
-  //     });
-
-  //     if (!customer) {
-  //       return res.status(404).json({ error: "Customer not found" });
-  //     }
-
-  //     const mandatoryFields = await prisma.mandatoryField.findMany({
-  //       where: { customerId: parseInt(customerId) },
-  //     });
-  //     res.status(200).json(mandatoryFields);
-  //   } catch (error) {
-  //     res.status(500).json({
-  //       error: "Failed to get mandatory fields",
-  //       details: error.message,
-  //     });
-  //   }
-  // },
   getValidFields: async (req, res) => {
     try {
       const validFields = [
         "productName",
-        "letDownResin",
         "lotNumber",
-        "pelletSize",
+        "quantity",
+        "letDownResin",
+        "pelletLength",
+        "pelletDimension",
         "pelletVisual",
         "color",
         "dispersibility",
@@ -452,6 +388,11 @@ module.exports = {
         "weightOfChips",
         "intrinsicViscosity",
         "ashContent",
+        "heatStability",
+        "lightFastness",
+        "granule",
+        "deltaE",
+        "macaroni",
       ];
 
       // Tambahkan log untuk mengambil valid fields

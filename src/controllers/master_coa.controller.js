@@ -57,7 +57,8 @@ const masterCoaController = {
           letDownResin,
           lotNumber,
           quantity,
-          pelletSize,
+          pelletLength,
+          pelletDimension,
           pelletVisual,
           color,
           dispersibility,
@@ -73,6 +74,11 @@ const masterCoaController = {
           weightOfChips,
           intrinsicViscosity,
           ashContent,
+          heatStability,
+          lightFastness,
+          granule,
+          deltaE,
+          macaroni,
         } = data;
 
         // Validasi data wajib
@@ -143,24 +149,31 @@ const masterCoaController = {
               productName,
               letDownResin: letDownResin || null,
               lotNumber,
-              quantity: parseFloat(quantity) || 0,
-              pelletSize: pelletSize || null,
-              pelletVisual: pelletVisual || null,
+              quantity: parseFloat(quantity) || null,
+              pelletLength: parseFloat(pelletLength) || null,
+              pelletDimension: parseFloat(pelletDimension) || null,
+              pelletVisual:
+                typeof pelletVisual === "boolean" ? pelletVisual : null,
               color: color || null,
               dispersibility: dispersibility || null,
-              mfr: mfr || null,
-              density: density || null,
-              moisture: moisture || null,
-              carbonContent: carbonContent || null,
+              mfr: parseFloat(mfr) || null,
+              density: parseFloat(density) || null,
+              moisture: parseFloat(moisture) || null,
+              carbonContent: parseFloat(carbonContent) || null,
               status: "need_approval",
               mfgDate: mfgDate ? new Date(mfgDate) : null,
               expiryDate: expiryDate ? new Date(expiryDate) : null,
               analysisDate: analysisDate ? new Date(analysisDate) : null,
               printedDate: printedDate ? new Date(printedDate) : null,
               foreignMatter: foreignMatter || null,
-              weightOfChips: weightOfChips || null,
-              intrinsicViscosity: intrinsicViscosity || null,
-              ashContent: ashContent || null,
+              weightOfChips: parseFloat(weightOfChips) || null,
+              intrinsicViscosity: parseFloat(intrinsicViscosity) || null,
+              ashContent: parseFloat(ashContent) || null,
+              heatStability: parseFloat(heatStability) || null,
+              lightFastness: parseFloat(lightFastness) || null,
+              granule: granule || null,
+              deltaE: parseFloat(deltaE) || null,
+              macaroni: parseFloat(macaroni) || null,
               issueBy: currentUser.username,
               creator: {
                 connect: {
@@ -255,14 +268,10 @@ const masterCoaController = {
           orderBy: { createdAt: "desc" },
           include: {
             creator: {
-              select: {
-                username: true,
-              },
+              select: { username: true },
             },
             approver: {
-              select: {
-                username: true,
-              },
+              select: { username: true },
             },
             customer: true,
           },
@@ -300,14 +309,10 @@ const masterCoaController = {
         where: { id: parseInt(id) },
         include: {
           creator: {
-            select: {
-              username: true,
-            },
+            select: { username: true },
           },
           approver: {
-            select: {
-              username: true,
-            },
+            select: { username: true },
           },
           customer: true,
         },
@@ -345,7 +350,8 @@ const masterCoaController = {
         letDownResin,
         lotNumber,
         quantity,
-        pelletSize,
+        pelletLength,
+        pelletDimension,
         pelletVisual,
         color,
         dispersibility,
@@ -361,6 +367,11 @@ const masterCoaController = {
         weightOfChips,
         intrinsicViscosity,
         ashContent,
+        heatStability,
+        lightFastness,
+        granule,
+        deltaE,
+        macaroni,
       } = req.body;
 
       // Validasi customer exists jika customerId diupdate
@@ -378,50 +389,76 @@ const masterCoaController = {
         }
       }
 
-      const coa = await prisma.master_coa.update({
-        where: {
-          id: parseInt(id),
-        },
-        data: {
-          ...(customerId && {
-            customer: {
-              connect: {
-                id: parseInt(customerId),
-              },
-            },
-          }),
-          productName,
-          letDownResin,
-          lotNumber,
-          quantity: parseFloat(quantity) || 0,
-          pelletSize,
-          pelletVisual,
-          color,
-          dispersibility,
-          mfr,
-          density,
-          moisture,
-          carbonContent,
+      const updateData = {
+        ...(customerId && {
+          customer: { connect: { id: parseInt(customerId) } },
+        }),
+        ...(productName && { productName }),
+        ...(letDownResin && { letDownResin }),
+        ...(lotNumber && { lotNumber }),
+        ...(quantity !== undefined && {
+          quantity: parseFloat(quantity) || null,
+        }),
+        ...(pelletLength !== undefined && {
+          pelletLength: parseFloat(pelletLength) || null,
+        }),
+        ...(pelletDimension !== undefined && {
+          pelletDimension: parseFloat(pelletDimension) || null,
+        }),
+        ...(pelletVisual !== undefined && {
+          pelletVisual: typeof pelletVisual === "boolean" ? pelletVisual : null,
+        }),
+        ...(color && { color }),
+        ...(dispersibility && { dispersibility }),
+        ...(mfr !== undefined && { mfr: parseFloat(mfr) || null }),
+        ...(density !== undefined && { density: parseFloat(density) || null }),
+        ...(moisture !== undefined && {
+          moisture: parseFloat(moisture) || null,
+        }),
+        ...(carbonContent !== undefined && {
+          carbonContent: parseFloat(carbonContent) || null,
+        }),
+        ...(mfgDate !== undefined && {
           mfgDate: mfgDate ? new Date(mfgDate) : null,
+        }),
+        ...(expiryDate !== undefined && {
           expiryDate: expiryDate ? new Date(expiryDate) : null,
+        }),
+        ...(analysisDate !== undefined && {
           analysisDate: analysisDate ? new Date(analysisDate) : null,
+        }),
+        ...(printedDate !== undefined && {
           printedDate: printedDate ? new Date(printedDate) : null,
-          foreignMatter,
-          weightOfChips,
-          intrinsicViscosity,
-          ashContent,
-        },
+        }),
+        ...(foreignMatter !== undefined && { foreignMatter }),
+        ...(weightOfChips !== undefined && {
+          weightOfChips: parseFloat(weightOfChips) || null,
+        }),
+        ...(intrinsicViscosity !== undefined && {
+          intrinsicViscosity: parseFloat(intrinsicViscosity) || null,
+        }),
+        ...(ashContent !== undefined && {
+          ashContent: parseFloat(ashContent) || null,
+        }),
+        ...(heatStability !== undefined && {
+          heatStability: parseFloat(heatStability) || null,
+        }),
+        ...(lightFastness !== undefined && {
+          lightFastness: parseFloat(lightFastness) || null,
+        }),
+        ...(granule !== undefined && { granule: granule || null }),
+        ...(deltaE !== undefined && { deltaE: parseFloat(deltaE) || null }),
+        ...(macaroni !== undefined && {
+          macaroni: parseFloat(macaroni) || null,
+        }),
+      };
+
+      const coa = await prisma.master_coa.update({
+        where: { id: parseInt(id) },
+        data: updateData,
         include: {
-          creator: {
-            select: {
-              username: true,
-            },
-          },
-          approver: {
-            select: {
-              username: true,
-            },
-          },
+          creator: { select: { username: true } },
+          approver: { select: { username: true } },
           customer: true,
         },
       });
@@ -463,15 +500,15 @@ const masterCoaController = {
       if (existingCoa.status === "approved") {
         return res.status(403).json({
           status: "error",
-          message: "COA has been Approved, Cant be Deleted!",
+          message: "COA yang sudah diapprove tidak dapat dihapus",
         });
       }
 
+      // Cek apakah user adalah pembuat COA
       if (existingCoa.createdBy !== req.user.id) {
         return res.status(403).json({
           status: "error",
-          message:
-            "You are not allowed to delete this COA, Only Creator Can Delete",
+          message: "Anda tidak memiliki akses untuk menghapus COA ini",
         });
       }
 
@@ -490,7 +527,7 @@ const masterCoaController = {
       // Buat log sebelum menghapus
       await createLog(
         "delete",
-        `COA dihapus: ${existingCoa.customer.name} - ${existingCoa.productName} (Lot: ${existingCoa.lotNumber})`,
+        `COA dihapus: ${existingCoa.costumerName} - ${existingCoa.productName} (Lot: ${existingCoa.lotNumber})`,
         existingCoa.id,
         req.user.id
       );
@@ -503,7 +540,8 @@ const masterCoaController = {
           lotNumber: existingCoa.lotNumber,
           quantity: existingCoa.quantity,
           letDownResin: existingCoa.letDownResin,
-          pelletSize: existingCoa.pelletSize,
+          pelletLength: existingCoa.pelletLength,
+          pelletDimension: existingCoa.pelletDimension,
           pelletVisual: existingCoa.pelletVisual,
           color: existingCoa.color,
           dispersibility: existingCoa.dispersibility,
@@ -519,6 +557,11 @@ const masterCoaController = {
           weightOfChips: existingCoa.weightOfChips,
           intrinsicViscosity: existingCoa.intrinsicViscosity,
           ashContent: existingCoa.ashContent,
+          heatStability: existingCoa.heatStability,
+          lightFastness: existingCoa.lightFastness,
+          granule: existingCoa.granule,
+          deltaE: existingCoa.deltaE,
+          macaroni: existingCoa.macaroni,
           issueBy: existingCoa.issueBy,
           createdAt: existingCoa.createdAt,
           updatedAt: existingCoa.updatedAt,
@@ -553,6 +596,12 @@ const masterCoaController = {
       res.json({
         status: "success",
         message: "COA berhasil dihapus",
+        data: {
+          id: existingCoa.id,
+          costumerName: existingCoa.costumerName,
+          productName: existingCoa.productName,
+          lotNumber: existingCoa.lotNumber,
+        },
       });
     } catch (error) {
       console.error("Error deleting COA:", error);
@@ -594,24 +643,16 @@ const masterCoaController = {
           orderBy: { deletedAt: "desc" },
           include: {
             creator: {
-              select: {
-                username: true,
-              },
+              select: { username: true },
             },
             approver: {
-              select: {
-                username: true,
-              },
+              select: { username: true },
             },
             deleter: {
-              select: {
-                username: true,
-              },
+              select: { username: true },
             },
             restorer: {
-              select: {
-                username: true,
-              },
+              select: { username: true },
             },
           },
         }),
@@ -681,7 +722,8 @@ const masterCoaController = {
           letDownResin: deletedCoa.letDownResin,
           lotNumber: deletedCoa.lotNumber,
           quantity: deletedCoa.quantity,
-          pelletSize: deletedCoa.pelletSize,
+          pelletLength: deletedCoa.pelletLength,
+          pelletDimension: deletedCoa.pelletDimension,
           pelletVisual: deletedCoa.pelletVisual,
           color: deletedCoa.color,
           dispersibility: deletedCoa.dispersibility,
@@ -697,6 +739,11 @@ const masterCoaController = {
           weightOfChips: deletedCoa.weightOfChips,
           intrinsicViscosity: deletedCoa.intrinsicViscosity,
           ashContent: deletedCoa.ashContent,
+          heatStability: deletedCoa.heatStability,
+          lightFastness: deletedCoa.lightFastness,
+          granule: deletedCoa.granule,
+          deltaE: deletedCoa.deltaE,
+          macaroni: deletedCoa.macaroni,
           issueBy: deletedCoa.issueBy,
           approvedBy: deletedCoa.approvedBy,
           approvedDate: deletedCoa.approvedDate,
@@ -816,14 +863,10 @@ const masterCoaController = {
         },
         include: {
           creator: {
-            select: {
-              username: true,
-            },
+            select: { username: true },
           },
           approver: {
-            select: {
-              username: true,
-            },
+            select: { username: true },
           },
           customer: {
             include: {

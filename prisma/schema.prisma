@@ -59,7 +59,26 @@ model RolePermission {
 }
 
 model master_product {
-  id        Int @id @default((autoincrement()))
+  id                 Int      @id @default(autoincrement())
+  productName        String
+  resin              String?
+  letDownRatio       String?
+  pellet             String?
+  color              String?
+  dispersibility     String?
+  mfr                Float?
+  density            Float?
+  moisture           Float?
+  carbonContent      Float?
+  foreignMatter      String?
+  weightOfChips      Float?
+  intrinsicViscosity Float?
+  ashContent         Float?
+  heatStability      Float?
+  lightFastness      Float?
+  granule            String?
+  deltaE             Float?
+  macaroni           Float?
 }
 
 model master_coa {
@@ -69,22 +88,28 @@ model master_coa {
   lotNumber         String
   quantity          Float?
   letDownResin      String?
-  pelletSize        String?
-  pelletVisual      String?
+  pelletLength      Float?
+  pelletDimension   Float?
+  pelletVisual      Boolean?
   color             String?
   dispersibility    String?
-  mfr               String?
-  density           String?
-  moisture          String?
-  carbonContent     String?
+  mfr               Float?
+  density           Float?
+  moisture          Float?
+  carbonContent     Float?
   mfgDate           DateTime?
   expiryDate        DateTime?
   analysisDate      DateTime?
   printedDate       DateTime?
   foreignMatter     String?
-  weightOfChips     String?
-  intrinsicViscosity String?
-  ashContent        String?
+  weightOfChips     Float?
+  intrinsicViscosity Float?
+  ashContent        Float?
+  heatStability     Float?
+  lightFastness     Float?
+  granule           String?
+  deltaE            Float?
+  macaroni          Float?
   issueBy           String?
   status            String   @default("draft")
   approvedBy        Int?
@@ -106,22 +131,28 @@ model deleted_coa {
   lotNumber         String
   letDownResin      String?
   quantity          Float?
-  pelletSize        String?
-  pelletVisual      String?
+  pelletLength      Float?
+  pelletDimension   Float?
+  pelletVisual      Boolean?
   color             String?
   dispersibility    String?
-  mfr               String?
-  density           String?
-  moisture          String?
-  carbonContent     String?
+  mfr               Float?
+  density           Float?
+  moisture          Float?
+  carbonContent     Float?
   mfgDate           DateTime?
   expiryDate        DateTime?
   analysisDate      DateTime?
   printedDate       DateTime?
   foreignMatter     String?
-  weightOfChips     String?
-  intrinsicViscosity String?
-  ashContent        String?
+  weightOfChips     Float?
+  intrinsicViscosity Float?
+  ashContent        Float?
+  heatStability     Float?
+  lightFastness     Float?
+  granule           String?
+  deltaE            Float?
+  macaroni          Float?
   issueBy           String?
   approvedBy        Int?
   approvedDate      DateTime?

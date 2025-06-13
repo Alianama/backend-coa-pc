@@ -56,6 +56,55 @@ async function main() {
           description: "Dapat mengelola peran",
         },
       }),
+      prisma.permission.create({
+        data: {
+          name: "CREATE_CUSTOMER",
+          description: "Dapat membuat customer baru",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "READ_CUSTOMER",
+          description: "Dapat melihat data customer",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "UPDATE_CUSTOMER",
+          description: "Dapat mengubah data customer",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "DELETE_CUSTOMER",
+          description: "Dapat menghapus customer",
+        },
+      }),
+      // Tambahan permission untuk master product
+      prisma.permission.create({
+        data: {
+          name: "view_products",
+          description: "Dapat melihat data produk",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "create_products",
+          description: "Dapat membuat produk baru",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "edit_products",
+          description: "Dapat mengubah data produk",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "delete_products",
+          description: "Dapat menghapus produk",
+        },
+      }),
     ]);
 
     // Buat roles
@@ -96,7 +145,13 @@ async function main() {
         permissions: {
           create: permissions
             .filter((p) =>
-              ["CREATE_COA", "READ_COA", "DELETE_COA"].includes(p.name)
+              [
+                "CREATE_COA",
+                "READ_COA",
+                "DELETE_COA",
+                "READ_CUSTOMER",
+                "view_products",
+              ].includes(p.name)
             )
             .map((permission) => ({
               permission: {
