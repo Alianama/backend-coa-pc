@@ -23,15 +23,17 @@ async function createLog(action, description, userId) {
 // Get all products
 const getAllProducts = async (req, res) => {
   try {
-    const products = await prisma.master_product.findMany();
-
-    // Tambahkan log untuk mengambil semua produk
-    await createLog(
-      "GET_ALL_PRODUCTS",
-      `Berhasil mengambil ${products.length} data produk`,
-      req.user?.id
-    );
-
+    const products = await prisma.master_product.findMany({
+      include: {
+        creator: {
+          select: {
+            id: true,
+            fullName: true,
+            username: true,
+          },
+        },
+      },
+    });
     res.status(200).json({
       status: "success",
       message: "Data produk berhasil diambil",
@@ -60,6 +62,15 @@ const getProductById = async (req, res) => {
 
     const product = await prisma.master_product.findUnique({
       where: { id: productId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            fullName: true,
+            username: true,
+          },
+        },
+      },
     });
 
     if (!product) {
@@ -101,8 +112,12 @@ const createProduct = async (req, res) => {
       });
     }
 
+    // Tambahkan createdBy dari user yang sedang login
     const product = await prisma.master_product.create({
-      data: productData,
+      data: {
+        ...productData,
+        createdBy: req.user.id,
+      },
     });
 
     // Tambahkan log untuk pembuatan produk

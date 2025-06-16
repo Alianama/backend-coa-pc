@@ -25,6 +25,7 @@ model User {
   deletedCoas          deleted_coa[] @relation("DeletedBy", map: "deleted_coa_deleted_fkey")
   restoredCoas         deleted_coa[] @relation("RestoredBy", map: "deleted_coa_restored_fkey")
   logs Log[]
+  products      master_product[]
 }
 
 model Role {
@@ -79,11 +80,16 @@ model master_product {
   granule            String?
   deltaE             Float?
   macaroni           Float?
+  createdAt          DateTime @default(now())
+  createdBy          Int
+  creator            User     @relation(fields: [createdBy], references: [id])
+  coas               master_coa[]
 }
 
 model master_coa {
   id                Int      @id @default(autoincrement())
   costumerName      String
+  productId         Int
   productName       String
   lotNumber         String
   quantity          Float?
@@ -122,6 +128,7 @@ model master_coa {
   logs Log[]
   customer          master_customer? @relation("CustomerCoas", fields: [customerId], references: [id])
   customerId        Int?
+  product           master_product   @relation(fields: [productId], references: [id])
 }
 
 model deleted_coa {

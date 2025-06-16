@@ -53,8 +53,7 @@ const masterCoaController = {
       for (const data of coaData) {
         const {
           customerId,
-          productName,
-          letDownResin,
+          productId,
           lotNumber,
           quantity,
           pelletLength,
@@ -79,6 +78,7 @@ const masterCoaController = {
           granule,
           deltaE,
           macaroni,
+          letDownResin,
         } = data;
 
         // Validasi data wajib
@@ -90,10 +90,10 @@ const masterCoaController = {
           continue;
         }
 
-        if (!productName) {
+        if (!productId) {
           errors.push({
             data,
-            error: "Product Name harus diisi",
+            error: "Product ID harus diisi",
           });
           continue;
         }
@@ -115,6 +115,19 @@ const masterCoaController = {
           errors.push({
             data,
             error: `Customer dengan ID ${customerId} tidak ditemukan`,
+          });
+          continue;
+        }
+
+        // Validasi product exists
+        const product = await prisma.master_product.findUnique({
+          where: { id: parseInt(productId) },
+        });
+
+        if (!product) {
+          errors.push({
+            data,
+            error: `Product dengan ID ${productId} tidak ditemukan`,
           });
           continue;
         }
@@ -145,9 +158,13 @@ const masterCoaController = {
                   id: parseInt(customerId),
                 },
               },
+              product: {
+                connect: {
+                  id: parseInt(productId),
+                },
+              },
               costumerName: customer.name,
-              productName,
-              letDownResin: letDownResin || null,
+              productName: product.productName,
               lotNumber,
               quantity: parseFloat(quantity) || null,
               pelletLength: parseFloat(pelletLength) || null,
@@ -174,6 +191,7 @@ const masterCoaController = {
               granule: granule || null,
               deltaE: parseFloat(deltaE) || null,
               macaroni: parseFloat(macaroni) || null,
+              letDownResin: letDownResin || null,
               issueBy: currentUser.username,
               creator: {
                 connect: {
@@ -188,6 +206,7 @@ const masterCoaController = {
                 },
               },
               customer: true,
+              product: true,
             },
           });
 
@@ -245,6 +264,7 @@ const masterCoaController = {
               { lotNumber: { contains: search } },
               { issueBy: { contains: search } },
               { customer: { name: { contains: search } } },
+              { product: { productName: { contains: search } } },
             ],
           }
         : {};
@@ -274,6 +294,7 @@ const masterCoaController = {
               select: { username: true },
             },
             customer: true,
+            product: true,
           },
         }),
         prisma.master_coa.count({ where }),
@@ -315,6 +336,7 @@ const masterCoaController = {
             select: { username: true },
           },
           customer: true,
+          product: true,
         },
       });
 
@@ -346,8 +368,7 @@ const masterCoaController = {
       const { id } = req.params;
       const {
         customerId,
-        productName,
-        letDownResin,
+        productId,
         lotNumber,
         quantity,
         pelletLength,
@@ -372,6 +393,7 @@ const masterCoaController = {
         granule,
         deltaE,
         macaroni,
+        letDownResin,
       } = req.body;
 
       // Validasi customer exists jika customerId diupdate
@@ -389,12 +411,30 @@ const masterCoaController = {
         }
       }
 
+      // Validasi product exists jika productId diupdate
+      let product = null;
+      if (productId) {
+        product = await prisma.master_product.findUnique({
+          where: { id: parseInt(productId) },
+        });
+
+        if (!product) {
+          return res.status(404).json({
+            status: "error",
+            message: "Product tidak ditemukan",
+          });
+        }
+      }
+
       const updateData = {
         ...(customerId && {
           customer: { connect: { id: parseInt(customerId) } },
+          costumerName: customer.name,
         }),
-        ...(productName && { productName }),
-        ...(letDownResin && { letDownResin }),
+        ...(productId && {
+          product: { connect: { id: parseInt(productId) } },
+          productName: product.productName,
+        }),
         ...(lotNumber && { lotNumber }),
         ...(quantity !== undefined && {
           quantity: parseFloat(quantity) || null,
@@ -451,6 +491,7 @@ const masterCoaController = {
         ...(macaroni !== undefined && {
           macaroni: parseFloat(macaroni) || null,
         }),
+        ...(letDownResin && { letDownResin }),
       };
 
       const coa = await prisma.master_coa.update({
@@ -460,6 +501,7 @@ const masterCoaController = {
           creator: { select: { username: true } },
           approver: { select: { username: true } },
           customer: true,
+          product: true,
         },
       });
 
