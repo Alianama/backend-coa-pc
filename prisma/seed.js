@@ -105,6 +105,18 @@ async function main() {
           description: "Dapat menghapus produk",
         },
       }),
+      prisma.permission.create({
+        data: {
+          name: "PRINT_COA",
+          description: "Dapat print coa",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "READ_PRINT_COA",
+          description: "Dapat read print coa",
+        },
+      }),
     ]);
 
     // Buat roles
@@ -151,6 +163,8 @@ async function main() {
                 "DELETE_COA",
                 "READ_CUSTOMER",
                 "view_products",
+                "PRINT_COA",
+                "READ_PRINT_COA",
               ].includes(p.name)
             )
             .map((permission) => ({

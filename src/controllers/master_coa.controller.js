@@ -57,7 +57,7 @@ const masterCoaController = {
           lotNumber,
           quantity,
           pelletLength,
-          pelletDimension,
+          pelletHeight,
           pelletVisual,
           color,
           dispersibility,
@@ -78,7 +78,7 @@ const masterCoaController = {
           granule,
           deltaE,
           macaroni,
-          letDownResin,
+          letDownRatio,
         } = data;
 
         // Validasi data wajib
@@ -168,7 +168,7 @@ const masterCoaController = {
               lotNumber,
               quantity: parseFloat(quantity) || null,
               pelletLength: parseFloat(pelletLength) || null,
-              pelletDimension: parseFloat(pelletDimension) || null,
+              pelletHeight: parseFloat(pelletHeight) || null,
               pelletVisual:
                 typeof pelletVisual === "boolean" ? pelletVisual : null,
               color: color || null,
@@ -191,7 +191,7 @@ const masterCoaController = {
               granule: granule || null,
               deltaE: parseFloat(deltaE) || null,
               macaroni: parseFloat(macaroni) || null,
-              letDownResin: letDownResin || null,
+              letDownRatio: letDownRatio || null,
               issueBy: currentUser.username,
               creator: {
                 connect: {
@@ -265,6 +265,7 @@ const masterCoaController = {
               { issueBy: { contains: search } },
               { customer: { name: { contains: search } } },
               { product: { productName: { contains: search } } },
+              { color: { contains: search } },
             ],
           }
         : {};
@@ -288,10 +289,10 @@ const masterCoaController = {
           orderBy: { createdAt: "desc" },
           include: {
             creator: {
-              select: { username: true },
+              select: { fullName: true },
             },
             approver: {
-              select: { username: true },
+              select: { fullName: true },
             },
             customer: true,
             product: true,
@@ -330,10 +331,10 @@ const masterCoaController = {
         where: { id: parseInt(id) },
         include: {
           creator: {
-            select: { username: true },
+            select: { fullName: true },
           },
           approver: {
-            select: { username: true },
+            select: { fullName: true },
           },
           customer: true,
           product: true,
@@ -346,7 +347,6 @@ const masterCoaController = {
           message: "COA tidak ditemukan",
         });
       }
-
       res.json({
         status: "success",
         message: "Data COA berhasil diambil",
@@ -372,7 +372,7 @@ const masterCoaController = {
         lotNumber,
         quantity,
         pelletLength,
-        pelletDimension,
+        pelletHeight,
         pelletVisual,
         color,
         dispersibility,
@@ -393,7 +393,7 @@ const masterCoaController = {
         granule,
         deltaE,
         macaroni,
-        letDownResin,
+        letDownRatio,
       } = req.body;
 
       // Validasi customer exists jika customerId diupdate
@@ -442,8 +442,8 @@ const masterCoaController = {
         ...(pelletLength !== undefined && {
           pelletLength: parseFloat(pelletLength) || null,
         }),
-        ...(pelletDimension !== undefined && {
-          pelletDimension: parseFloat(pelletDimension) || null,
+        ...(pelletHeight !== undefined && {
+          pelletHeight: parseFloat(pelletHeight) || null,
         }),
         ...(pelletVisual !== undefined && {
           pelletVisual: typeof pelletVisual === "boolean" ? pelletVisual : null,
@@ -491,15 +491,15 @@ const masterCoaController = {
         ...(macaroni !== undefined && {
           macaroni: parseFloat(macaroni) || null,
         }),
-        ...(letDownResin && { letDownResin }),
+        ...(letDownRatio && { letDownRatio }),
       };
 
       const coa = await prisma.master_coa.update({
         where: { id: parseInt(id) },
         data: updateData,
         include: {
-          creator: { select: { username: true } },
-          approver: { select: { username: true } },
+          creator: { select: { fullName: true } },
+          approver: { select: { fullName: true } },
           customer: true,
           product: true,
         },
@@ -581,9 +581,9 @@ const masterCoaController = {
           productName: existingCoa.productName,
           lotNumber: existingCoa.lotNumber,
           quantity: existingCoa.quantity,
-          letDownResin: existingCoa.letDownResin,
+          letDownRatio: existingCoa.letDownRatio,
           pelletLength: existingCoa.pelletLength,
-          pelletDimension: existingCoa.pelletDimension,
+          pelletHeight: existingCoa.pelletHeight,
           pelletVisual: existingCoa.pelletVisual,
           color: existingCoa.color,
           dispersibility: existingCoa.dispersibility,
@@ -752,6 +752,9 @@ const masterCoaController = {
       // Buat COA baru dari data yang dihapus
       const restoredCoa = await prisma.master_coa.create({
         data: {
+          creator: {
+            select: { fullName: true },
+          },
           customer: customer
             ? {
                 connect: {
@@ -761,11 +764,11 @@ const masterCoaController = {
             : undefined,
           costumerName: deletedCoa.costumerName,
           productName: deletedCoa.productName,
-          letDownResin: deletedCoa.letDownResin,
+          letDownRatio: deletedCoa.letDownRatio,
           lotNumber: deletedCoa.lotNumber,
           quantity: deletedCoa.quantity,
           pelletLength: deletedCoa.pelletLength,
-          pelletDimension: deletedCoa.pelletDimension,
+          pelletHeight: deletedCoa.pelletHeight,
           pelletVisual: deletedCoa.pelletVisual,
           color: deletedCoa.color,
           dispersibility: deletedCoa.dispersibility,

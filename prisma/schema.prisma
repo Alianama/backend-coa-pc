@@ -20,12 +20,51 @@ model User {
   role          Role         @relation(fields: [roleId], references: [id])
   createdCoas   master_coa[] @relation("CreatedBy")
   approvedCoas  master_coa[] @relation("ApprovedBy")
+  printedCoas   print_coa[] @relation("printedBy")
   deletedCoasCreated   deleted_coa[] @relation("DeletedCreatedBy", map: "deleted_coa_created_fkey")
   deletedCoasApproved  deleted_coa[] @relation("DeletedApprovedBy", map: "deleted_coa_approved_fkey")
   deletedCoas          deleted_coa[] @relation("DeletedBy", map: "deleted_coa_deleted_fkey")
   restoredCoas         deleted_coa[] @relation("RestoredBy", map: "deleted_coa_restored_fkey")
   logs Log[]
   products      master_product[]
+}
+
+model print_coa {
+  id          Int @id @default(autoincrement())
+  costumerName      String
+  productId         Int
+  productName       String
+  lotNumber         String
+  quantity          Float?
+  letDownRatio      String?
+  pelletLength      Float?
+  pelletHeight      Float?
+  pelletVisual      Boolean?
+  color             String?
+  dispersibility    String?
+  mfr               Float?
+  density           Float?
+  moisture          Float?
+  carbonContent     Float?
+  mfgDate           DateTime?
+  expiryDate        DateTime?
+  analysisDate      DateTime?
+  printedDate       DateTime?
+  foreignMatter     String?
+  weightOfChips     Float?
+  intrinsicViscosity Float?
+  ashContent        Float?
+  heatStability     Float?
+  lightFastness     Float?
+  granule           String?
+  deltaE            Float?
+  macaroni          Float?
+  issueBy           String?
+  approvedBy        Int?
+  approvedDate      DateTime?
+  createdAt   DateTime  @default(now())
+  printedBy       Int?
+  creator         User?     @relation("printedBy", fields: [printedBy], references: [id])
 }
 
 model Role {
@@ -64,7 +103,9 @@ model master_product {
   productName        String
   resin              String?
   letDownRatio       String?
-  pellet             String?
+  pelletLength       Float?
+  pelletHeight       Float?
+  pelletVisual       Boolean?
   color              String?
   dispersibility     String?
   mfr                Float?
@@ -93,9 +134,9 @@ model master_coa {
   productName       String
   lotNumber         String
   quantity          Float?
-  letDownResin      String?
+  letDownRatio      String?
   pelletLength      Float?
-  pelletDimension   Float?
+  pelletHeight       Float?
   pelletVisual      Boolean?
   color             String?
   dispersibility    String?
@@ -136,10 +177,10 @@ model deleted_coa {
   costumerName      String
   productName       String
   lotNumber         String
-  letDownResin      String?
+  letDownRatio      String?
   quantity          Float?
   pelletLength      Float?
-  pelletDimension   Float?
+  pelletHeight      Float?
   pelletVisual      Boolean?
   color             String?
   dispersibility    String?
