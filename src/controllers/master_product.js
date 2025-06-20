@@ -24,6 +24,9 @@ async function createLog(action, description, userId) {
 const getAllProducts = async (req, res) => {
   try {
     const products = await prisma.master_product.findMany({
+      where: {
+        status: "active",
+      },
       include: {
         creator: {
           select: {
@@ -32,6 +35,9 @@ const getAllProducts = async (req, res) => {
             username: true,
           },
         },
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
     res.status(200).json({
@@ -56,12 +62,15 @@ const getProductById = async (req, res) => {
     if (isNaN(productId)) {
       return res.status(400).json({
         status: "error",
-        message: "Invalid product ID",
+        message: "ID produk tidak valid",
       });
     }
 
-    const product = await prisma.master_product.findUnique({
-      where: { id: productId },
+    const product = await prisma.master_product.findFirst({
+      where: {
+        id: productId,
+        status: "active",
+      },
       include: {
         creator: {
           select: {
@@ -80,7 +89,6 @@ const getProductById = async (req, res) => {
       });
     }
 
-    // Tambahkan log untuk mengambil produk by ID
     await createLog(
       "GET_PRODUCT_BY_ID",
       `Berhasil mengambil data produk dengan ID ${productId}`,
@@ -112,15 +120,43 @@ const createProduct = async (req, res) => {
       });
     }
 
-    // Tambahkan createdBy dari user yang sedang login
+    // Validasi tipe data numerik
+    const numericFields = [
+      "pelletLength",
+      "pelletHeight",
+      "mfr",
+      "density",
+      "moisture",
+      "carbonContent",
+      "weightOfChips",
+      "intrinsicViscosity",
+      "ashContent",
+      "heatStability",
+      "lightFastness",
+      "deltaE",
+      "macaroni",
+    ];
+
+    for (const field of numericFields) {
+      if (
+        productData[field] !== undefined &&
+        isNaN(parseFloat(productData[field]))
+      ) {
+        return res.status(400).json({
+          status: "error",
+          message: `Field ${field} harus berupa angka`,
+        });
+      }
+    }
+
     const product = await prisma.master_product.create({
       data: {
         ...productData,
+        status: "active",
         createdBy: req.user.id,
       },
     });
 
-    // Tambahkan log untuk pembuatan produk
     await createLog(
       "CREATE_PRODUCT",
       `Produk "${product.productName}" berhasil dibuat`,
@@ -150,13 +186,15 @@ const updateProduct = async (req, res) => {
     if (isNaN(productId)) {
       return res.status(400).json({
         status: "error",
-        message: "Invalid product ID",
+        message: "ID produk tidak valid",
       });
     }
 
-    // Validasi produk exists
-    const existingProduct = await prisma.master_product.findUnique({
-      where: { id: productId },
+    const existingProduct = await prisma.master_product.findFirst({
+      where: {
+        id: productId,
+        status: "active",
+      },
     });
 
     if (!existingProduct) {
@@ -166,12 +204,43 @@ const updateProduct = async (req, res) => {
       });
     }
 
+    // Validasi tipe data numerik
+    const numericFields = [
+      "pelletLength",
+      "pelletHeight",
+      "mfr",
+      "density",
+      "moisture",
+      "carbonContent",
+      "weightOfChips",
+      "intrinsicViscosity",
+      "ashContent",
+      "heatStability",
+      "lightFastness",
+      "deltaE",
+      "macaroni",
+    ];
+
+    for (const field of numericFields) {
+      if (
+        productData[field] !== undefined &&
+        isNaN(parseFloat(productData[field]))
+      ) {
+        return res.status(400).json({
+          status: "error",
+          message: `Field ${field} harus berupa angka`,
+        });
+      }
+    }
+
     const product = await prisma.master_product.update({
       where: { id: productId },
-      data: productData,
+      data: {
+        ...productData,
+        updatedAt: new Date(),
+      },
     });
 
-    // Tambahkan log untuk update produk
     await createLog(
       "UPDATE_PRODUCT",
       `Produk "${product.productName}" dengan ID ${productId} berhasil diupdate`,
@@ -192,7 +261,7 @@ const updateProduct = async (req, res) => {
   }
 };
 
-// Delete product
+// Delete product (soft delete)
 const deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
@@ -200,13 +269,15 @@ const deleteProduct = async (req, res) => {
     if (isNaN(productId)) {
       return res.status(400).json({
         status: "error",
-        message: "Invalid product ID",
+        message: "ID produk tidak valid",
       });
     }
 
-    // Cek apakah produk dengan id tersebut ada
-    const existingProduct = await prisma.master_product.findUnique({
-      where: { id: productId },
+    const existingProduct = await prisma.master_product.findFirst({
+      where: {
+        id: productId,
+        status: "active",
+      },
     });
 
     if (!existingProduct) {
@@ -216,11 +287,14 @@ const deleteProduct = async (req, res) => {
       });
     }
 
-    const product = await prisma.master_product.delete({
+    const product = await prisma.master_product.update({
       where: { id: productId },
+      data: {
+        status: "inactive",
+        updatedAt: new Date(),
+      },
     });
 
-    // Tambahkan log untuk delete produk
     await createLog(
       "DELETE_PRODUCT",
       `Produk "${product.productName}" dengan ID ${id} berhasil dihapus`,

@@ -8,81 +8,83 @@ datasource db {
 }
 
 model User {
-  id            Int          @id @default(autoincrement())
-  fullName      String
-  username      String       @unique
-  email         String?      @unique
-  password      String
-  roleId        Int
-  tokenVersion  Int          @default(0)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  role          Role         @relation(fields: [roleId], references: [id])
-  createdCoas   master_coa[] @relation("CreatedBy")
-  approvedCoas  master_coa[] @relation("ApprovedBy")
-  printedCoas   print_coa[] @relation("printedBy")
-  deletedCoasCreated   deleted_coa[] @relation("DeletedCreatedBy", map: "deleted_coa_created_fkey")
-  deletedCoasApproved  deleted_coa[] @relation("DeletedApprovedBy", map: "deleted_coa_approved_fkey")
-  deletedCoas          deleted_coa[] @relation("DeletedBy", map: "deleted_coa_deleted_fkey")
-  restoredCoas         deleted_coa[] @relation("RestoredBy", map: "deleted_coa_restored_fkey")
-  logs Log[]
-  products      master_product[]
+  id                  Int               @id @default(autoincrement())
+  fullName            String
+  username            String            @unique
+  email               String?           @unique
+  password            String
+  roleId              Int
+  tokenVersion        Int               @default(0)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  role                Role              @relation(fields: [roleId], references: [id])
+  createdCoas         master_coa[]      @relation("CreatedBy")
+  approvedCoas        master_coa[]      @relation("ApprovedBy")
+  printedCoas         print_coa[]       @relation("printedBy")
+  deletedCoasCreated  deleted_coa[]     @relation("DeletedCreatedBy", map: "deleted_coa_created_fkey")
+  deletedCoasApproved deleted_coa[]     @relation("DeletedApprovedBy", map: "deleted_coa_approved_fkey")
+  deletedCoas         deleted_coa[]     @relation("DeletedBy", map: "deleted_coa_deleted_fkey")
+  restoredCoas        deleted_coa[]     @relation("RestoredBy", map: "deleted_coa_restored_fkey")
+  logs                Log[]
+  products            master_product[]
+  planningHeaders     planningHeader[]
+  planningDetails     PlanningDetail[]
 }
 
 model print_coa {
-  id          Int @id @default(autoincrement())
-  costumerName      String
-  productId         Int
-  productName       String
-  lotNumber         String
-  quantity          Float?
-  letDownRatio      String?
-  pelletLength      Float?
-  pelletHeight      Float?
-  pelletVisual      Boolean?
-  color             String?
-  dispersibility    String?
-  mfr               Float?
-  density           Float?
-  moisture          Float?
-  carbonContent     Float?
-  mfgDate           DateTime?
-  expiryDate        DateTime?
-  analysisDate      DateTime?
-  printedDate       DateTime?
-  foreignMatter     String?
-  weightOfChips     Float?
+  id                 Int       @id @default(autoincrement())
+  costumerName       String
+  productId          Int
+  productName        String
+  lotNumber          String
+  quantity           Float?
+  letDownRatio       String?
+  pelletLength       Float?
+  pelletHeight       Float?
+  pelletVisual       Boolean?
+  color              String?
+  dispersibility     String?
+  mfr                Float?
+  density            Float?
+  moisture           Float?
+  carbonContent      Float?
+  mfgDate            DateTime?
+  expiryDate         DateTime?
+  analysisDate       DateTime?
+  printedDate        DateTime?
+  foreignMatter      String?
+  weightOfChips      Float?
   intrinsicViscosity Float?
-  ashContent        Float?
-  heatStability     Float?
-  lightFastness     Float?
-  granule           String?
-  deltaE            Float?
-  macaroni          Float?
-  issueBy           String?
-  approvedBy        Int?
-  approvedDate      DateTime?
-  createdAt   DateTime  @default(now())
-  printedBy       Int?
-  creator         User?     @relation("printedBy", fields: [printedBy], references: [id])
+  ashContent         Float?
+  heatStability      Float?
+  lightFastness      Float?
+  granule            String?
+  deltaE             Float?
+  macaroni           Float?
+  issueBy            String?
+  approvedBy         Int?
+  approvedDate       DateTime?
+  createdAt          DateTime  @default(now())
+  printedBy          Int?
+  creator            User?     @relation("printedBy", fields: [printedBy], references: [id])
 }
 
 model Role {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
   description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   users       User[]
   permissions RolePermission[]
 }
 
 model Permission {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
   description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   roles       RolePermission[]
 }
 
@@ -99,13 +101,12 @@ model RolePermission {
 }
 
 model master_product {
-  id                 Int      @id @default(autoincrement())
+  id                 Int               @id @default(autoincrement())
   productName        String
   resin              String?
   letDownRatio       String?
   pelletLength       Float?
   pelletHeight       Float?
-  pelletVisual       Boolean?
   color              String?
   dispersibility     String?
   mfr                Float?
@@ -121,135 +122,206 @@ model master_product {
   granule            String?
   deltaE             Float?
   macaroni           Float?
-  createdAt          DateTime @default(now())
+  status             String            @default("active")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
   createdBy          Int
-  creator            User     @relation(fields: [createdBy], references: [id])
+  creator            User              @relation(fields: [createdBy], references: [id])
   coas               master_coa[]
+  planningHeaders    planningHeader[] @relation("ProductPlanningHeader")
 }
 
 model master_coa {
-  id                Int      @id @default(autoincrement())
-  costumerName      String
-  productId         Int
-  productName       String
-  lotNumber         String
-  quantity          Float?
-  letDownRatio      String?
-  pelletLength      Float?
+  id                 Int              @id @default(autoincrement())
+  costumerName       String
+  productId          Int
+  productName        String
+  lotNumber          String
+  letDownRatio       String?
+  pelletLength       Float?
   pelletHeight       Float?
-  pelletVisual      Boolean?
-  color             String?
-  dispersibility    String?
-  mfr               Float?
-  density           Float?
-  moisture          Float?
-  carbonContent     Float?
-  mfgDate           DateTime?
-  expiryDate        DateTime?
-  analysisDate      DateTime?
-  printedDate       DateTime?
-  foreignMatter     String?
-  weightOfChips     Float?
+  pelletVisual       Boolean?
+  color              String?
+  dispersibility     String?
+  mfr                Float?
+  density            Float?
+  moisture           Float?
+  carbonContent      Float?
+  mfgDate            DateTime?
+  expiryDate         DateTime?
+  analysisDate       DateTime?
+  printedDate        DateTime?
+  foreignMatter      String?
+  weightOfChips      Float?
   intrinsicViscosity Float?
-  ashContent        Float?
-  heatStability     Float?
-  lightFastness     Float?
-  granule           String?
-  deltaE            Float?
-  macaroni          Float?
-  issueBy           String?
-  status            String   @default("draft")
-  approvedBy        Int?
-  approvedDate      DateTime?
-  createdBy         Int
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  creator           User     @relation("CreatedBy", fields: [createdBy], references: [id])
-  approver          User?    @relation("ApprovedBy", fields: [approvedBy], references: [id])
-  logs Log[]
-  customer          master_customer? @relation("CustomerCoas", fields: [customerId], references: [id])
-  customerId        Int?
-  product           master_product   @relation(fields: [productId], references: [id])
+  ashContent         Float?
+  heatStability      Float?
+  lightFastness      Float?
+  granule            String?
+  deltaE             Float?
+  macaroni           Float?
+  issueBy            String?
+  status             String           @default("draft")
+  approvedBy         Int?
+  approvedDate       DateTime?
+  createdBy          Int
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  creator            User             @relation("CreatedBy", fields: [createdBy], references: [id])
+  approver           User?            @relation("ApprovedBy", fields: [approvedBy], references: [id])
+  logs               Log[]
+  customer           master_customer? @relation("CustomerCoas", fields: [customerId], references: [id])
+  customerId         Int?
+  product            master_product   @relation(fields: [productId], references: [id])
 }
 
 model deleted_coa {
-  id                Int      @id @default(autoincrement())
-  costumerName      String
-  productName       String
-  lotNumber         String
-  letDownRatio      String?
-  quantity          Float?
-  pelletLength      Float?
-  pelletHeight      Float?
-  pelletVisual      Boolean?
-  color             String?
-  dispersibility    String?
-  mfr               Float?
-  density           Float?
-  moisture          Float?
-  carbonContent     Float?
-  mfgDate           DateTime?
-  expiryDate        DateTime?
-  analysisDate      DateTime?
-  printedDate       DateTime?
-  foreignMatter     String?
-  weightOfChips     Float?
+  id                 Int       @id @default(autoincrement())
+  costumerName       String
+  productName        String
+  lotNumber          String
+  letDownRatio       String?
+  pelletLength       Float?
+  pelletHeight       Float?
+  pelletVisual       Boolean?
+  color              String?
+  dispersibility     String?
+  mfr                Float?
+  density            Float?
+  moisture           Float?
+  carbonContent      Float?
+  mfgDate            DateTime?
+  expiryDate         DateTime?
+  analysisDate       DateTime?
+  printedDate        DateTime?
+  foreignMatter      String?
+  weightOfChips      Float?
   intrinsicViscosity Float?
-  ashContent        Float?
-  heatStability     Float?
-  lightFastness     Float?
-  granule           String?
-  deltaE            Float?
-  macaroni          Float?
-  issueBy           String?
-  approvedBy        Int?
-  approvedDate      DateTime?
-  createdBy         Int?
-  createdAt         DateTime?
-  updatedAt         DateTime?
-  deletedBy         Int?
-  deletedAt         DateTime @default(now())
-  isRestored        Boolean  @default(false)
-  restoredAt        DateTime?
-  restoredBy        Int?
-  originalId        Int      @unique
-  creator           User?    @relation("DeletedCreatedBy", fields: [createdBy], references: [id])
-  approver          User?    @relation("DeletedApprovedBy", fields: [approvedBy], references: [id])
-  deleter           User?    @relation("DeletedBy", fields: [deletedBy], references: [id])
-  restorer          User?    @relation("RestoredBy", fields: [restoredBy], references: [id])
+  ashContent         Float?
+  heatStability      Float?
+  lightFastness      Float?
+  granule            String?
+  deltaE             Float?
+  macaroni           Float?
+  issueBy            String?
+  approvedBy         Int?
+  approvedDate       DateTime?
+  createdBy          Int?
+  createdAt          DateTime?
+  updatedAt          DateTime?
+  deletedBy          Int?
+  deletedAt          DateTime  @default(now())
+  isRestored         Boolean   @default(false)
+  restoredAt         DateTime?
+  restoredBy         Int?
+  originalId         Int       @unique
+  creator            User?     @relation("DeletedCreatedBy", fields: [createdBy], references: [id])
+  approver           User?     @relation("DeletedApprovedBy", fields: [approvedBy], references: [id])
+  deleter            User?     @relation("DeletedBy", fields: [deletedBy], references: [id])
+  restorer           User?     @relation("RestoredBy", fields: [restoredBy], references: [id])
 }
 
 model master_customer {
-  id                Int      @id @default(autoincrement())
-  name              String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  coas              master_coa[] @relation("CustomerCoas")
-  mandatoryFields   MandatoryField[]
+  id              Int               @id @default(autoincrement())
+  name            String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  coas            master_coa[]      @relation("CustomerCoas")
+  mandatoryFields MandatoryField[]
+  planningHeaders planningHeader[] @relation("CustomerPlanningHeader")
+
   @@unique([name])
 }
 
 model MandatoryField {
-  id          Int      @id @default(autoincrement())
-  fieldName   String   // Nama kolom dari master_coa (contoh: 'costumerName', 'productName', dll)
-  customerId  Int
-  customer    master_customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         Int             @id @default(autoincrement())
+  fieldName  String // Nama kolom dari master_coa (contoh: 'costumerName', 'productName', dll)
+  customerId Int
+  customer   master_customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
 
   @@unique([customerId, fieldName])
   @@index([fieldName])
 }
 
 model Log {
-  id          Int      @id @default(autoincrement())
-  action      String   
-  description String  
-  coaId       Int?     
-  userId      Int      
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
+  id          Int         @id @default(autoincrement())
+  action      String
+  description String
+  coaId       Int?
+  userId      Int
+  createdAt   DateTime    @default(now())
+  user        User        @relation(fields: [userId], references: [id])
   coa         master_coa? @relation(fields: [coaId], references: [id])
 
   @@map("logs")
 }
+
+enum Status {
+  open
+  progress
+  close
+}
+
+model planningHeader {
+  id           Int      @id @default(autoincrement())
+  idCustomer   Int
+  idProduct    Int
+  resin        String
+  ratio        String
+  moulding     String
+  lotNumber    String
+  qtyPlanning  Int
+  mfgDate      DateTime
+  expiryDate   DateTime
+  status       Status   @default(open)
+  createdBy    Int
+  createdAt    DateTime @default(now())
+  creator      User     @relation(fields: [createdBy], references: [id])
+
+  customer master_customer @relation("CustomerPlanningHeader", fields: [idCustomer], references: [id])
+  product  master_product  @relation("ProductPlanningHeader", fields: [idProduct], references: [id])
+  planningDetails PlanningDetail[]
+}
+
+
+
+model PlanningDetail {
+  id                 Int      @id @default(autoincrement())
+  qty                Float
+  idPlanning         Int
+  lineNo             Int?
+  deltaL             Float?
+  deltaA             Float?
+  deltaB             Float?
+  deltaE             Float?
+  density            Float?
+  mfr                Float?
+  dispersion         Float?
+  contamination      Float?
+  macaroni           Float?
+  pelletLength       Float?
+  pelletDiameter     Float?
+  visualCheck        String?
+  moisture           Float?
+  carbonContent      Float?
+  foreignMatter      Float?
+  weightChips        Float?
+  intrinsicViscosity Float?
+  ashContent         Float?
+  heatStability      Float?
+  lightFastness      Float?
+  granule            Float?
+  qcJudgment         String?
+  analysisDate       DateTime?
+  checkedBy          String?
+  remark             String?
+
+  planningHeader     planningHeader @relation(fields: [idPlanning], references: [id])
+  createdBy          Int
+  createdAt          DateTime @default(now())
+  creator            User     @relation(fields: [createdBy], references: [id])
+}
+
+

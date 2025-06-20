@@ -7,10 +7,16 @@ const prisma = new PrismaClient();
 async function main() {
   try {
     // Hapus data yang ada dengan urutan yang benar
-    await prisma.user.deleteMany(); // Hapus user terlebih dahulu
-    await prisma.rolePermission.deleteMany(); // Hapus role permission
-    await prisma.permission.deleteMany(); // Hapus permission
-    await prisma.role.deleteMany(); // Hapus role
+    await prisma.log.deleteMany();
+    await prisma.master_coa.deleteMany();
+    await prisma.print_coa.deleteMany();
+    await prisma.deleted_coa.deleteMany();
+    await prisma.master_product.deleteMany();
+    await prisma.planning_header.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.rolePermission.deleteMany();
+    await prisma.permission.deleteMany();
+    await prisma.role.deleteMany();
 
     // Buat permissions
     const permissions = await Promise.all([
@@ -117,6 +123,31 @@ async function main() {
           description: "Dapat read print coa",
         },
       }),
+      // Permission untuk planning_header
+      prisma.permission.create({
+        data: {
+          name: "CREATE_PLANNING_HEADER",
+          description: "Dapat membuat planning header",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "READ_PLANNING_HEADER",
+          description: "Dapat melihat planning header",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "UPDATE_PLANNING_HEADER",
+          description: "Dapat mengubah planning header",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "DELETE_PLANNING_HEADER",
+          description: "Dapat menghapus planning header",
+        },
+      }),
     ]);
 
     // Buat roles
@@ -165,6 +196,11 @@ async function main() {
                 "view_products",
                 "PRINT_COA",
                 "READ_PRINT_COA",
+                // Tambahkan permission planning_header ke user
+                "CREATE_PLANNING_HEADER",
+                "READ_PLANNING_HEADER",
+                "UPDATE_PLANNING_HEADER",
+                "DELETE_PLANNING_HEADER",
               ].includes(p.name)
             )
             .map((permission) => ({

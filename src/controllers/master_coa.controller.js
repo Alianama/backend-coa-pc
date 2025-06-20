@@ -55,7 +55,6 @@ const masterCoaController = {
           customerId,
           productId,
           lotNumber,
-          quantity,
           pelletLength,
           pelletHeight,
           pelletVisual,
@@ -166,7 +165,6 @@ const masterCoaController = {
               costumerName: customer.name,
               productName: product.productName,
               lotNumber,
-              quantity: parseFloat(quantity) || null,
               pelletLength: parseFloat(pelletLength) || null,
               pelletHeight: parseFloat(pelletHeight) || null,
               pelletVisual:
@@ -301,11 +299,35 @@ const masterCoaController = {
         prisma.master_coa.count({ where }),
       ]);
 
+      // Ambil total quantity dari print_coa untuk setiap COA
+      const coasWithQuantity = await Promise.all(
+        coas.map(async (coa) => {
+          const printCoas = await prisma.print_coa.findMany({
+            where: {
+              lotNumber: coa.lotNumber,
+            },
+            select: {
+              quantity: true,
+            },
+          });
+
+          const totalQuantity = printCoas.reduce(
+            (sum, printCoa) => sum + (printCoa.quantity || 0),
+            0
+          );
+
+          return {
+            ...coa,
+            quantity: totalQuantity,
+          };
+        })
+      );
+
       res.json({
         status: "success",
         role: req.user.roleId,
         message: "Data COA berhasil diambil",
-        data: coas,
+        data: coasWithQuantity,
         pagination: {
           total,
           page: parseInt(page),
@@ -347,10 +369,29 @@ const masterCoaController = {
           message: "COA tidak ditemukan",
         });
       }
+
+      // Ambil total quantity dari print_coa
+      const printCoas = await prisma.print_coa.findMany({
+        where: {
+          lotNumber: coa.lotNumber,
+        },
+        select: {
+          quantity: true,
+        },
+      });
+
+      const totalQuantity = printCoas.reduce(
+        (sum, printCoa) => sum + (printCoa.quantity || 0),
+        0
+      );
+
       res.json({
         status: "success",
         message: "Data COA berhasil diambil",
-        data: coa,
+        data: {
+          ...coa,
+          quantity: totalQuantity,
+        },
       });
     } catch (error) {
       console.error("Error fetching COA:", error);
@@ -370,7 +411,6 @@ const masterCoaController = {
         customerId,
         productId,
         lotNumber,
-        quantity,
         pelletLength,
         pelletHeight,
         pelletVisual,
@@ -436,9 +476,6 @@ const masterCoaController = {
           productName: product.productName,
         }),
         ...(lotNumber && { lotNumber }),
-        ...(quantity !== undefined && {
-          quantity: parseFloat(quantity) || null,
-        }),
         ...(pelletLength !== undefined && {
           pelletLength: parseFloat(pelletLength) || null,
         }),
@@ -505,10 +542,28 @@ const masterCoaController = {
         },
       });
 
+      // Ambil total quantity dari print_coa
+      const printCoas = await prisma.print_coa.findMany({
+        where: {
+          lotNumber: coa.lotNumber,
+        },
+        select: {
+          quantity: true,
+        },
+      });
+
+      const totalQuantity = printCoas.reduce(
+        (sum, printCoa) => sum + (printCoa.quantity || 0),
+        0
+      );
+
       res.json({
         status: "success",
         message: "COA berhasil diperbarui",
-        data: coa,
+        data: {
+          ...coa,
+          quantity: totalQuantity,
+        },
       });
     } catch (error) {
       console.error("Error updating COA:", error);
