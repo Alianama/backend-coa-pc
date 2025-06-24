@@ -9,31 +9,31 @@ router.use(verifyToken);
 // Product routes
 router.post(
   "/",
-  checkPermission("create_products"),
+  checkPermission("CREATE_PRODUCT"),
   masterProductController.createProduct
 );
 
 router.get(
   "/",
-  checkPermission("view_products"),
+  checkPermission("READ_PRODUCT"),
   masterProductController.getAllProducts
 );
 
 router.get(
   "/:id",
-  checkPermission("view_products"),
+  checkPermission("READ_PRODUCT"),
   masterProductController.getProductById
 );
 
 router.put(
   "/:id",
-  checkPermission("edit_products"),
+  checkPermission("UPDATE_PRODUCT"),
   masterProductController.updateProduct
 );
 
 router.delete(
   "/:id",
-  checkPermission("delete_products"),
+  checkPermission("DELETE_PRODUCT"),
   masterProductController.deleteProduct
 );
 

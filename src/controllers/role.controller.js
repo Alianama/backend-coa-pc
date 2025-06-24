@@ -16,6 +16,7 @@ const roleController = {
       });
 
       res.json({
+        status: "success",
         message: "Data role berhasil diambil",
         data: roles,
       });
@@ -54,6 +55,7 @@ const roleController = {
       });
 
       res.status(201).json({
+        status: "success",
         message: "Role berhasil dibuat",
         data: role,
       });
@@ -70,7 +72,7 @@ const roleController = {
       const { name, description, permissions } = req.body;
 
       // Delete existing permissions
-      await prisma.rolePermission.deleteMany({
+      await prisma.role_permission.deleteMany({
         where: { roleId: parseInt(id) },
       });
 
@@ -97,6 +99,7 @@ const roleController = {
       });
 
       res.json({
+        status: "success",
         message: "Role berhasil diperbarui",
         data: role,
       });
@@ -118,6 +121,7 @@ const roleController = {
       });
 
       res.json({
+        status: "success",
         message: "Role berhasil dihapus",
       });
     } catch (error) {
@@ -134,6 +138,7 @@ const roleController = {
       const permissions = await prisma.permission.findMany();
 
       res.json({
+        status: "success",
         message: "Data permission berhasil diambil",
         data: permissions,
       });
@@ -277,6 +282,36 @@ const roleController = {
       res
         .status(500)
         .json({ message: "Terjadi kesalahan saat memperbarui role user" });
+    }
+  },
+
+  // Get role by ID
+  async getById(req, res) {
+    try {
+      const { id } = req.params;
+      const role = await prisma.role.findUnique({
+        where: { id: parseInt(id) },
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
+          },
+        },
+      });
+      if (!role) {
+        return res.status(404).json({ message: "Role not found" });
+      }
+      res.json({
+        status: "success",
+        message: "Data role berhasil diambil",
+        data: role,
+      });
+    } catch (error) {
+      console.error("Error fetching role by ID:", error);
+      res
+        .status(500)
+        .json({ message: "Terjadi kesalahan saat mengambil data role" });
     }
   },
 };

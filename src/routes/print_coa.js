@@ -6,8 +6,12 @@ const checkPermission = require("../middleware/checkPermission");
 
 router.use(verifyToken);
 
-// Print COA routes
-router.post("/:coaId", checkPermission("PRINT_COA"), printCoaController.print);
+// Print COA from planning
+router.post(
+  "/:planningId",
+  checkPermission("PRINT_COA"),
+  printCoaController.print
+);
 
 router.get("/", checkPermission("READ_PRINT_COA"), printCoaController.getAll);
 

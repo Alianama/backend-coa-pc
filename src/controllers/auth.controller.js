@@ -13,6 +13,17 @@ const authController = {
 
       const user = await prisma.user.findUnique({
         where: { username },
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  permission: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!user) {
@@ -168,12 +179,14 @@ const authController = {
 
   async logout(req, res) {
     try {
-      const userId = req.user.id;
-
-      // Increment tokenVersion untuk invalidate semua refresh token
+      // Invalidate the token by incrementing the tokenVersion
       await prisma.user.update({
-        where: { id: userId },
-        data: { tokenVersion: { increment: 1 } },
+        where: { id: req.user.id },
+        data: {
+          tokenVersion: {
+            increment: 1,
+          },
+        },
       });
 
       res.json({ message: "Logout berhasil" });
@@ -220,6 +233,60 @@ const authController = {
       });
     } catch (error) {
       console.error("Error getting own profile:", error);
+      res.status(500).json({
+        message: "Terjadi kesalahan saat mengambil profil",
+        error: error.message,
+      });
+    }
+  },
+
+  async getProfile(req, res) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: {
+            select: {
+              id: true,
+              name: true,
+              permissions: {
+                select: {
+                  permission: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          message: "User tidak ditemukan",
+          error: "User tidak ditemukan dalam sistem",
+        });
+      }
+
+      // Transform dates to ISO string
+      const transformedUser = {
+        ...user,
+        createdAt: user.createdAt?.toISOString(),
+        updatedAt: user.updatedAt?.toISOString(),
+        lastLogin: user.lastLogin?.toISOString(),
+      };
+
+      res.json({
+        status: "success",
+        data: transformedUser,
+      });
+    } catch (error) {
+      console.error("Error getting profile:", error);
       res.status(500).json({
         message: "Terjadi kesalahan saat mengambil profil",
         error: error.message,

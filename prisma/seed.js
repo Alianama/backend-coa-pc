@@ -1,6 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcrypt");
-const { ROLES } = require("../src/constants/roles");
+// const { ROLES } = require("../src/constants/roles");
 
 const prisma = new PrismaClient();
 
@@ -11,12 +11,16 @@ async function main() {
     await prisma.master_coa.deleteMany();
     await prisma.print_coa.deleteMany();
     await prisma.deleted_coa.deleteMany();
-    await prisma.master_product.deleteMany();
+    await prisma.product_standards.deleteMany();
+    await prisma.planning_detail.deleteMany();
     await prisma.planning_header.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.rolePermission.deleteMany();
+    await prisma.mandatory_field.deleteMany();
+    await prisma.master_customer.deleteMany();
+    await prisma.master_product.deleteMany();
+    await prisma.role_permission.deleteMany();
     await prisma.permission.deleteMany();
     await prisma.role.deleteMany();
+    await prisma.user.deleteMany();
 
     // Buat permissions
     const permissions = await Promise.all([
@@ -89,25 +93,25 @@ async function main() {
       // Tambahan permission untuk master product
       prisma.permission.create({
         data: {
-          name: "view_products",
+          name: "READ_PRODUCT",
           description: "Dapat melihat data produk",
         },
       }),
       prisma.permission.create({
         data: {
-          name: "create_products",
+          name: "CREATE_PRODUCT",
           description: "Dapat membuat produk baru",
         },
       }),
       prisma.permission.create({
         data: {
-          name: "edit_products",
+          name: "UPDATE_PRODUCT",
           description: "Dapat mengubah data produk",
         },
       }),
       prisma.permission.create({
         data: {
-          name: "delete_products",
+          name: "DELETE_PRODUCT",
           description: "Dapat menghapus produk",
         },
       }),
@@ -193,10 +197,9 @@ async function main() {
                 "READ_COA",
                 "DELETE_COA",
                 "READ_CUSTOMER",
-                "view_products",
+                "READ_PRODUCT",
                 "PRINT_COA",
                 "READ_PRINT_COA",
-                // Tambahkan permission planning_header ke user
                 "CREATE_PLANNING_HEADER",
                 "READ_PLANNING_HEADER",
                 "UPDATE_PLANNING_HEADER",

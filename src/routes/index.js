@@ -10,6 +10,7 @@ const masterCustomerRoutes = require("./master_customer");
 const masterProductRoutes = require("./master_product");
 const printCoaRoutes = require("./print_coa");
 const planningHeaderRoutes = require("./planning.routes");
+const productStandardRoutes = require("./product_standard");
 
 // Use routes
 router.use("/auth", authRoutes);
@@ -20,5 +21,6 @@ router.use("/customer", masterCustomerRoutes);
 router.use("/product", masterProductRoutes);
 router.use("/print", printCoaRoutes);
 router.use("/planning", planningHeaderRoutes);
+router.use("/product-standard", productStandardRoutes);
 
 module.exports = router;

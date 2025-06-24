@@ -6,9 +6,10 @@ const VALID_COA_FIELDS = [
   "productName",
   "lotNumber",
   "quantity",
-  "letDownResin",
+  "letDownRatio",
+  "resin",
   "pelletLength",
-  "pelletHeight",
+  "pelletDiameter",
   "pelletVisual",
   "color",
   "dispersibility",
@@ -99,7 +100,7 @@ module.exports = {
           fieldName,
         }));
 
-        await prisma.mandatoryField.createMany({
+        await prisma.mandatory_field.createMany({
           data: mandatoryFieldsData,
         });
 
@@ -271,7 +272,7 @@ module.exports = {
         // Update mandatory fields jika ada
         if (mandatoryFields) {
           // Hapus semua mandatory fields yang ada
-          await prisma.mandatoryField.deleteMany({
+          await prisma.mandatory_field.deleteMany({
             where: { customerId },
           });
 
@@ -281,7 +282,7 @@ module.exports = {
             fieldName,
           }));
 
-          await prisma.mandatoryField.createMany({
+          await prisma.mandatory_field.createMany({
             data: mandatoryFieldsData,
           });
         }
@@ -370,9 +371,10 @@ module.exports = {
         "productName",
         "lotNumber",
         "quantity",
-        "letDownResin",
+        "letDownRatio",
+        "resin",
         "pelletLength",
-        "pelletHeight",
+        "pelletDiameter",
         "pelletVisual",
         "color",
         "dispersibility",

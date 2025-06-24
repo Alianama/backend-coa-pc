@@ -7,7 +7,7 @@ const planningHeaderController = {
     try {
       const data = req.body;
       // Validasi lotNumber unik
-      const existingLot = await prisma.planningHeader.findFirst({
+      const existingLot = await prisma.planning_header.findFirst({
         where: { lotNumber: data.lotNumber },
       });
       if (existingLot) {
@@ -16,7 +16,7 @@ const planningHeaderController = {
           message: "Lot number sudah terdaftar, gunakan lot number lain!",
         });
       }
-      const planning = await prisma.planningHeader.create({
+      const planning = await prisma.planning_header.create({
         data: {
           ...data,
           createdBy: req.user.id,
@@ -56,7 +56,7 @@ const planningHeaderController = {
           }
         : {};
       const [plannings, total] = await Promise.all([
-        prisma.planningHeader.findMany({
+        prisma.planning_header.findMany({
           where,
           skip: parseInt(skip),
           take: parseInt(limit),
@@ -68,7 +68,7 @@ const planningHeaderController = {
             planningDetails: true,
           },
         }),
-        prisma.planningHeader.count({ where }),
+        prisma.planning_header.count({ where }),
       ]);
       res.json({
         status: "success",
@@ -94,7 +94,7 @@ const planningHeaderController = {
   async getById(req, res) {
     try {
       const { id } = req.params;
-      const planning = await prisma.planningHeader.findUnique({
+      const planning = await prisma.planning_header.findUnique({
         where: { id: parseInt(id) },
         include: {
           creator: { select: { fullName: true } },
@@ -127,7 +127,7 @@ const planningHeaderController = {
     try {
       const { id } = req.params;
       const data = req.body;
-      const planning = await prisma.planningHeader.update({
+      const planning = await prisma.planning_header.update({
         where: { id: parseInt(id) },
         data,
         include: { creator: { select: { fullName: true } } },
@@ -150,7 +150,7 @@ const planningHeaderController = {
   async delete(req, res) {
     try {
       const { id } = req.params;
-      await prisma.planningHeader.delete({
+      await prisma.planning_header.delete({
         where: { id: parseInt(id) },
       });
       res.json({ status: "success", message: "Planning berhasil dihapus" });
@@ -168,7 +168,7 @@ const planningHeaderController = {
     try {
       const { idPlanning, deltaL, deltaA, deltaB, qty } = req.body;
       // Validasi planningHeader ada
-      const planning = await prisma.planningHeader.findUnique({
+      const planning = await prisma.planning_header.findUnique({
         where: { id: idPlanning },
       });
       if (!planning) {
@@ -177,7 +177,6 @@ const planningHeaderController = {
           message: "Planning header tidak ditemukan",
         });
       }
-      // Validasi jika planning sudah di-close
       if (planning.status === "close") {
         return res.status(400).json({
           status: "error",
@@ -185,23 +184,19 @@ const planningHeaderController = {
             "Tidak dapat menambah detail pada planning yang sudah di-close.",
         });
       }
-      // Ambil semua detail untuk planning ini
-      const details = await prisma.planningDetail.findMany({
+      const details = await prisma.planning_detail.findMany({
         where: { idPlanning },
       });
-      // Hitung total qty existing
       const totalQtyExisting = details.reduce(
         (sum, d) => sum + (d.qty || 0),
         0
       );
-      // Validasi qty baru tidak melebihi qtyPlanning
       if (totalQtyExisting + (qty || 0) > planning.qtyPlanning) {
         return res.status(400).json({
           status: "error",
           message: `Total quantity check melebihi quantity planning (${planning.qtyPlanning})!`,
         });
       }
-      // Fungsi hitungMagnitude
       function hitungMagnitude(x, y, z) {
         return Math.sqrt(x * x + y * y + z * z);
       }
@@ -213,18 +208,56 @@ const planningHeaderController = {
       ) {
         deltaE = hitungMagnitude(deltaL, deltaA, deltaB);
       }
-      const detail = await prisma.planningDetail.create({
+      // QC Judgement logic
+      let qcJudgment = "Passed";
+      const standards = await prisma.product_standards.findMany({
+        where: { product_id: planning.idProduct },
+      });
+      for (const std of standards) {
+        const actual = req.body[std.property_name];
+        if (actual === undefined || actual === null) continue;
+        if (std.operator === "PLUS_MINUS") {
+          if (
+            actual < std.target_value - (std.tolerance || 0) ||
+            actual > std.target_value + (std.tolerance || 0)
+          ) {
+            qcJudgment = "NG";
+            break;
+          }
+        } else if (std.operator === "LESS_THAN") {
+          if (!(actual < std.target_value)) {
+            qcJudgment = "NG";
+            break;
+          }
+        } else if (std.operator === "LESS_EQUAL") {
+          if (!(actual <= std.target_value)) {
+            qcJudgment = "NG";
+            break;
+          }
+        } else if (std.operator === "GREATER_THAN") {
+          if (!(actual > std.target_value)) {
+            qcJudgment = "NG";
+            break;
+          }
+        } else if (std.operator === "GREATER_EQUAL") {
+          if (!(actual >= std.target_value)) {
+            qcJudgment = "NG";
+            break;
+          }
+        }
+      }
+      const detail = await prisma.planning_detail.create({
         data: {
           ...req.body,
           deltaE,
+          qcJudgment,
           createdBy: req.user.id,
         },
         include: {
           creator: { select: { fullName: true } },
         },
       });
-      // Update status planning header menjadi PROGRESS
-      await prisma.planningHeader.update({
+      await prisma.planning_header.update({
         where: { id: idPlanning },
         data: { status: "progress" },
       });
@@ -244,13 +277,53 @@ const planningHeaderController = {
   async getDetailsByPlanningId(req, res) {
     try {
       const { idPlanning } = req.params;
-      const details = await prisma.planningDetail.findMany({
+      const details = await prisma.planning_detail.findMany({
         where: { idPlanning: parseInt(idPlanning) },
         include: { creator: { select: { fullName: true } } },
       });
+      // Ambil standar produk
+      const planning = await prisma.planning_header.findUnique({
+        where: { id: parseInt(idPlanning) },
+      });
+      const standards = await prisma.product_standards.findMany({
+        where: { product_id: planning.idProduct },
+      });
+      // Tambahkan qcDetail di setiap detail
+      const detailsWithQC = details.map((detail) => {
+        const qcDetail = standards.map((std) => {
+          const actual = detail[std.property_name];
+          let result = null;
+          if (actual === undefined || actual === null) {
+            result = null;
+          } else if (std.operator === "PLUS_MINUS") {
+            result =
+              actual >= std.target_value - (std.tolerance || 0) &&
+              actual <= std.target_value + (std.tolerance || 0)
+                ? "Passed"
+                : "NG";
+          } else if (std.operator === "LESS_THAN") {
+            result = actual < std.target_value ? "Passed" : "NG";
+          } else if (std.operator === "LESS_EQUAL") {
+            result = actual <= std.target_value ? "Passed" : "NG";
+          }
+          return {
+            property_name: std.property_name,
+            actual,
+            target_value: std.target_value,
+            tolerance: std.tolerance,
+            operator: std.operator,
+            unit: std.unit,
+            result,
+          };
+        });
+        return { ...detail, qcDetail };
+      });
       // Hitung total qty
-      const totalQtyCheck = details.reduce((sum, d) => sum + (d.qty || 0), 0);
-      res.json({ status: "success", totalQtyCheck, data: details });
+      const totalQtyCheck = detailsWithQC.reduce(
+        (sum, d) => sum + (d.qty || 0),
+        0
+      );
+      res.json({ status: "success", totalQtyCheck, data: detailsWithQC });
     } catch (error) {
       res.status(500).json({
         status: "error",
@@ -262,7 +335,7 @@ const planningHeaderController = {
   async getDetailsByLotNumber(req, res) {
     try {
       const { lotNumber } = req.params;
-      const planning = await prisma.planningHeader.findFirst({
+      const planning = await prisma.planning_header.findFirst({
         where: { lotNumber },
         include: {
           customer: { select: { name: true } },
@@ -275,12 +348,47 @@ const planningHeaderController = {
           message: "Planning header tidak ditemukan",
         });
       }
-      const details = await prisma.planningDetail.findMany({
+      const details = await prisma.planning_detail.findMany({
         where: { idPlanning: planning.id },
         include: { creator: { select: { fullName: true } } },
       });
+      const standards = await prisma.product_standards.findMany({
+        where: { product_id: planning.idProduct },
+      });
+      const detailsWithQC = details.map((detail) => {
+        const qcDetail = standards.map((std) => {
+          const actual = detail[std.property_name];
+          let result = null;
+          if (actual === undefined || actual === null) {
+            result = null;
+          } else if (std.operator === "PLUS_MINUS") {
+            result =
+              actual >= std.target_value - (std.tolerance || 0) &&
+              actual <= std.target_value + (std.tolerance || 0)
+                ? "Passed"
+                : "NG";
+          } else if (std.operator === "LESS_THAN") {
+            result = actual < std.target_value ? "Passed" : "NG";
+          } else if (std.operator === "LESS_EQUAL") {
+            result = actual <= std.target_value ? "Passed" : "NG";
+          }
+          return {
+            property_name: std.property_name,
+            actual,
+            target_value: std.target_value,
+            tolerance: std.tolerance,
+            operator: std.operator,
+            unit: std.unit,
+            result,
+          };
+        });
+        return { ...detail, qcDetail };
+      });
       // Hitung total qty
-      const totalQtyCheck = details.reduce((sum, d) => sum + (d.qty || 0), 0);
+      const totalQtyCheck = detailsWithQC.reduce(
+        (sum, d) => sum + (d.qty || 0),
+        0
+      );
       // Susun header sesuai permintaan
       const header = {
         id: planning.id,
@@ -303,7 +411,7 @@ const planningHeaderController = {
         status: "success",
         totalQtyCheck,
         header,
-        data: details,
+        data: detailsWithQC,
       });
     } catch (error) {
       res.status(500).json({
@@ -316,11 +424,66 @@ const planningHeaderController = {
   async updateDetail(req, res) {
     try {
       const { id } = req.params;
-      // Jangan update createdBy dan createdAt
       const { ...updateData } = req.body;
-      const detail = await prisma.planningDetail.update({
+
+      if (updateData.analysisDate) {
+        updateData.analysisDate = new Date(
+          updateData.analysisDate
+        ).toISOString();
+      }
+
+      // Ambil detail dan planning terkait
+      const detailOld = await prisma.planning_detail.findUnique({
         where: { id: parseInt(id) },
-        data: updateData,
+      });
+      const planning = await prisma.planning_header.findUnique({
+        where: { id: detailOld.idPlanning },
+      });
+
+      // Gabungkan data lama dengan data update untuk evaluasi QC
+      const mergedData = { ...detailOld, ...updateData };
+
+      // QC Judgement logic
+      let qcJudgment = "Passed";
+      const standards = await prisma.product_standards.findMany({
+        where: { product_id: planning.idProduct },
+      });
+      for (const std of standards) {
+        const actual = mergedData[std.property_name];
+        if (actual === undefined || actual === null) continue;
+        if (std.operator === "PLUS_MINUS") {
+          if (
+            actual < std.target_value - (std.tolerance || 0) ||
+            actual > std.target_value + (std.tolerance || 0)
+          ) {
+            qcJudgment = "NG";
+            break;
+          }
+        } else if (std.operator === "LESS_THAN") {
+          if (!(actual < std.target_value)) {
+            qcJudgment = "NG";
+            break;
+          }
+        } else if (std.operator === "LESS_EQUAL") {
+          if (!(actual <= std.target_value)) {
+            qcJudgment = "NG";
+            break;
+          }
+        } else if (std.operator === "GREATER_THAN") {
+          if (!(actual > std.target_value)) {
+            qcJudgment = "NG";
+            break;
+          }
+        } else if (std.operator === "GREATER_EQUAL") {
+          if (!(actual >= std.target_value)) {
+            qcJudgment = "NG";
+            break;
+          }
+        }
+      }
+      const detail = await prisma.planning_detail.update({
+        where: { id: parseInt(id) },
+        data: { ...mergedData, qcJudgment },
         include: { creator: { select: { fullName: true } } },
       });
       res.json({
@@ -339,7 +502,7 @@ const planningHeaderController = {
   async deleteDetail(req, res) {
     try {
       const { id } = req.params;
-      const detailToDelete = await prisma.planningDetail.findUnique({
+      const detailToDelete = await prisma.planning_detail.findUnique({
         where: { id: parseInt(id) },
         include: {
           planningHeader: true,
@@ -358,12 +521,12 @@ const planningHeaderController = {
         });
       }
       const { idPlanning } = detailToDelete;
-      await prisma.planningDetail.delete({ where: { id: parseInt(id) } });
-      const remainingDetails = await prisma.planningDetail.count({
+      await prisma.planning_detail.delete({ where: { id: parseInt(id) } });
+      const remainingDetails = await prisma.planning_detail.count({
         where: { idPlanning },
       });
       if (remainingDetails === 0) {
-        await prisma.planningHeader.update({
+        await prisma.planning_header.update({
           where: { id: idPlanning },
           data: { status: "open" },
         });
@@ -380,7 +543,7 @@ const planningHeaderController = {
   async closePlanning(req, res) {
     try {
       const { id } = req.params;
-      const planning = await prisma.planningHeader.update({
+      const planning = await prisma.planning_header.update({
         where: { id: parseInt(id) },
         data: { status: "close" },
       });
@@ -400,7 +563,7 @@ const planningHeaderController = {
   async reopenPlanning(req, res) {
     try {
       const { id } = req.params;
-      const planningToReopen = await prisma.planningHeader.findUnique({
+      const planningToReopen = await prisma.planning_header.findUnique({
         where: { id: parseInt(id) },
         include: {
           planningDetails: {
@@ -415,7 +578,7 @@ const planningHeaderController = {
       }
       const newStatus =
         planningToReopen.planningDetails.length > 0 ? "progress" : "open";
-      const planning = await prisma.planningHeader.update({
+      const planning = await prisma.planning_header.update({
         where: { id: parseInt(id) },
         data: { status: newStatus },
       });
