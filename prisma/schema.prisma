@@ -18,8 +18,6 @@ model user {
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
   role                role           @relation(fields: [roleId], references: [id])
-  createdCoas         master_coa[]   @relation("CreatedBy")
-  approvedCoas        master_coa[]   @relation("ApprovedBy")
   printedCoas         print_coa[]    @relation("printedBy")
   deletedCoasCreated  deleted_coa[]  @relation("DeletedCreatedBy", map: "deleted_coa_created_fkey")
   deletedCoasApproved deleted_coa[]  @relation("DeletedApprovedBy", map: "deleted_coa_approved_fkey")
@@ -33,8 +31,15 @@ model user {
   @@map("users")
 }
 
+enum PrintStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+}
+
 model print_coa {
   id                 Int       @id @default(autoincrement())
+  status             PrintStatus
   planningId         Int?      @map("planning_id")
   costumerName       String    @map("costumer_name")
   productId          Int       @map("product_id")
@@ -45,9 +50,9 @@ model print_coa {
   resin              String?
   pelletLength       Float?    @map("pellet_length")
   pelletDiameter     Float?    @map("pellet_diameter")
-  pelletVisual       String?  @map("pellet_visual")
+  pelletVisual       String?   @map("pellet_visual")
   color              String?
-  dispersibility     String?
+  dispersibility     Float?
   mfr                Float?
   density            Float?
   moisture           Float?
@@ -56,14 +61,16 @@ model print_coa {
   expiryDate         DateTime? @map("expiry_date")
   analysisDate       DateTime? @map("analysis_date")
   printedDate        DateTime  @default(now()) @map("printed_date")
-  foreignMatter      String?   @map("foreign_matter")
+  foreignMatter      Float?    @map("foreign_matter")
   weightOfChips      Float?    @map("weight_of_chips")
   intrinsicViscosity Float?    @map("intrinsic_viscosity")
   ashContent         Float?    @map("ash_content")
   heatStability      Float?    @map("heat_stability")
   lightFastness      Float?    @map("light_fastness")
-  granule            String?
-  deltaE             Float?    @map("delta_e")
+  granule            Float?
+  tintDeltaE         Float?    @map("tint_delta_e")
+  colorDeltaE        Float?    @map("color_delta_e")
+  deltaP             Float?    @map("delta_p")
   macaroni           Float?
   issueBy            String?   @map("issue_by")
   approvedBy         Int?      @map("approved_by")
@@ -116,29 +123,12 @@ model master_product {
   productName        String    @map("product_name")
   resin              String?
   letDownRatio       String?   @map("let_down_ratio")
-  pelletLength       Float?    @map("pellet_length")
-  pelletHeight       Float?    @map("pellet_height")
   color              String?
-  dispersibility     String?
-  mfr                Float?
-  density            Float?
-  moisture           Float?
-  carbonContent      Float?    @map("carbon_content")
-  foreignMatter      String?   @map("foreign_matter")
-  weightOfChips      Float?    @map("weight_of_chips")
-  intrinsicViscosity Float?    @map("intrinsic_viscosity")
-  ashContent         Float?    @map("ash_content")
-  heatStability      Float?    @map("heat_stability")
-  lightFastness      Float?    @map("light_fastness")
-  granule            String?
-  deltaE             Float?    @map("delta_e")
-  macaroni           Float?
-  status             String    @default("active")
+  status             String    @default("draft")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
   createdBy          Int       @map("created_by")
   creator            user      @relation(fields: [createdBy], references: [id])
-  coas               master_coa[]
   planningHeaders    planning_header[]   @relation("ProductPlanningHeader")
   product_standards  product_standards[]
 
@@ -156,52 +146,6 @@ model product_standards {
   product       master_product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@map("product_standards")
-}
-
-model master_coa {
-  id                 Int       @id @default(autoincrement())
-  costumerName       String    @map("costumer_name")
-  productId          Int       @map("product_id")
-  productName        String    @map("product_name")
-  lotNumber          String    @map("lot_number")
-  letDownRatio       String?   @map("let_down_ratio")
-  pelletLength       Float?    @map("pellet_length")
-  pelletHeight       Float?    @map("pellet_height")
-  pelletVisual       String?  @map("pellet_visual")
-  color              String?
-  dispersibility     String?
-  mfr                Float?
-  density            Float?
-  moisture           Float?
-  carbonContent      Float?    @map("carbon_content")
-  mfgDate            DateTime? @map("mfg_date")
-  expiryDate         DateTime? @map("expiry_date")
-  analysisDate       DateTime? @map("analysis_date")
-  printedDate        DateTime? @map("printed_date")
-  foreignMatter      String?   @map("foreign_matter")
-  weightOfChips      Float?    @map("weight_of_chips")
-  intrinsicViscosity Float?    @map("intrinsic_viscosity")
-  ashContent         Float?    @map("ash_content")
-  heatStability      Float?    @map("heat_stability")
-  lightFastness      Float?    @map("light_fastness")
-  granule            String?
-  deltaE             Float?    @map("delta_e")
-  macaroni           Float?
-  issueBy            String?   @map("issue_by")
-  status             String    @default("draft")
-  approvedBy         Int?      @map("approved_by")
-  approvedDate       DateTime? @map("approved_date")
-  createdBy          Int       @map("created_by")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-  creator            user      @relation("CreatedBy", fields: [createdBy], references: [id])
-  approver           user?     @relation("ApprovedBy", fields: [approvedBy], references: [id])
-  logs               log[]
-  customer           master_customer? @relation("CustomerCoas", fields: [customerId], references: [id])
-  customerId         Int?             @map("customer_id")
-  product            master_product   @relation(fields: [productId], references: [id])
-
-  @@map("master_coa")
 }
 
 model deleted_coa {
@@ -257,7 +201,6 @@ model master_customer {
   name            String
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
-  coas            master_coa[]      @relation("CustomerCoas")
   mandatoryFields mandatory_field[]
   planningHeaders planning_header[] @relation("CustomerPlanningHeader")
 
@@ -286,7 +229,6 @@ model log {
   userId      Int         @map("user_id")
   createdAt   DateTime    @default(now()) @map("created_at")
   user        user        @relation(fields: [userId], references: [id])
-  coa         master_coa? @relation(fields: [coaId], references: [id])
 
   @@map("logs")
 }
@@ -314,6 +256,8 @@ model planning_header {
   moulding        String
   lotNumber       String    @map("lot_number")
   qtyPlanning     Int       @map("qty_planning")
+  quantityPrint   Float     @default(0) @map("quantity_print")
+  quantityCheck   Float     @default(0) @map("quantity_check")
   mfgDate         DateTime  @map("mfg_date")
   expiryDate      DateTime  @map("expiry_date")
   status          Status    @default(open)
@@ -332,22 +276,28 @@ model planning_detail {
   qty                Float
   idPlanning         Int      @map("id_planning")
   lineNo             Int?     @map("line_no")
-  deltaL             Float?   @map("delta_l")
-  deltaA             Float?   @map("delta_a")
-  deltaB             Float?   @map("delta_b")
-  deltaE             Float?   @map("delta_e")
+  tintDeltaL         Float?   @map("tint_delta_l")
+  tintDeltaA         Float?   @map("tint_delta_a")
+  tintDeltaB         Float?   @map("tint_delta_b")
+  tintDeltaE         Float?   @map("tint_delta_e")
+  colorDeltaL        Float?   @map("color_delta_l")
+  colorDeltaA        Float?   @map("color_delta_a")
+  colorDeltaB        Float?   @map("color_delta_b")
+  colorDeltaE        Float?   @map("color_delta_e")
+  deltaP             Float?   @map("delta_p")
   density            Float?
   mfr                Float?
-  dispersion         Float?
+  dispersibility     Float?
   contamination      Float?
   macaroni           Float?
   pelletLength       Float?   @map("pellet_length")
   pelletDiameter     Float?   @map("pellet_diameter")
   visualCheck        String?  @map("visual_check")
+  colorCheck         String?  @map("color_check")
   moisture           Float?
   carbonContent      Float?   @map("carbon_content")
   foreignMatter      Float?   @map("foreign_matter")
-  weightChips        Float?   @map("weight_chips")
+  weightOfChips      Float?   @map("weight_of_chips")
   intrinsicViscosity Float?   @map("intrinsic_viscosity")
   ashContent         Float?   @map("ash_content")
   heatStability      Float?   @map("heat_stability")
@@ -357,6 +307,7 @@ model planning_detail {
   analysisDate       DateTime? @map("analysis_date")
   checkedBy          String?  @map("checked_by")
   remark             String?
+  letDownRatio       String? @map("let_down_ratio")
   planningHeader     planning_header @relation(fields: [idPlanning], references: [id])
   createdBy          Int      @map("created_by")
   createdAt          DateTime @default(now()) @map("created_at")

@@ -10,7 +10,8 @@ const VALID_COA_FIELDS = [
   "resin",
   "pelletLength",
   "pelletDiameter",
-  "pelletVisual",
+  "visualCheck",
+  "colorCheck",
   "color",
   "dispersibility",
   "mfr",
@@ -28,7 +29,9 @@ const VALID_COA_FIELDS = [
   "heatStability",
   "lightFastness",
   "granule",
-  "deltaE",
+  "tintDeltaE",
+  "colorDeltaE",
+  "deltaP",
   "macaroni",
 ];
 
@@ -393,7 +396,9 @@ module.exports = {
         "heatStability",
         "lightFastness",
         "granule",
-        "deltaE",
+        "tintDeltaE",
+        "colorDeltaE",
+        "DeltaP",
         "macaroni",
       ];
 

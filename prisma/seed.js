@@ -6,9 +6,12 @@ const prisma = new PrismaClient();
 
 async function main() {
   try {
-    // Hapus data yang ada dengan urutan yang benar
+    // Hapus data dari tabel yang punya foreign key ke role dulu
+    await prisma.user.deleteMany();
+    await prisma.role_permission.deleteMany();
+    await prisma.permission.deleteMany();
+    await prisma.role.deleteMany();
     await prisma.log.deleteMany();
-    await prisma.master_coa.deleteMany();
     await prisma.print_coa.deleteMany();
     await prisma.deleted_coa.deleteMany();
     await prisma.product_standards.deleteMany();
@@ -17,10 +20,6 @@ async function main() {
     await prisma.mandatory_field.deleteMany();
     await prisma.master_customer.deleteMany();
     await prisma.master_product.deleteMany();
-    await prisma.role_permission.deleteMany();
-    await prisma.permission.deleteMany();
-    await prisma.role.deleteMany();
-    await prisma.user.deleteMany();
 
     // Buat permissions
     const permissions = await Promise.all([
@@ -90,7 +89,7 @@ async function main() {
           description: "Dapat menghapus customer",
         },
       }),
-      // Tambahan permission untuk master product
+
       prisma.permission.create({
         data: {
           name: "READ_PRODUCT",
@@ -123,7 +122,25 @@ async function main() {
       }),
       prisma.permission.create({
         data: {
+          name: "DELETE_PRINT_COA",
+          description: "Dapat print coa",
+        },
+      }),
+      prisma.permission.create({
+        data: {
           name: "READ_PRINT_COA",
+          description: "Dapat read print coa",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "APPROVE_PRINT_COA",
+          description: "Dapat read print coa",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "REJECT_PRINT_COA",
           description: "Dapat read print coa",
         },
       }),
@@ -193,16 +210,13 @@ async function main() {
           create: permissions
             .filter((p) =>
               [
-                "CREATE_COA",
-                "READ_COA",
-                "DELETE_COA",
                 "READ_CUSTOMER",
                 "READ_PRODUCT",
                 "PRINT_COA",
                 "READ_PRINT_COA",
+                "DELETE_PRINT_COA",
                 "CREATE_PLANNING_HEADER",
                 "READ_PLANNING_HEADER",
-                "UPDATE_PLANNING_HEADER",
                 "DELETE_PLANNING_HEADER",
               ].includes(p.name)
             )

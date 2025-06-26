@@ -19,7 +19,7 @@ const VALID_FIELDS = [
   "moisture",
   "carbonContent",
   "foreignMatter",
-  "weightChips",
+  "weightOfChips",
   "intrinsicViscosity",
   "ashContent",
   "heatStability",
@@ -68,6 +68,14 @@ const getProductStandardsByProduct = async (req, res) => {
   }
 };
 
+const updateProductStatusByStandard = async (product_id) => {
+  const count = await prisma.product_standards.count({ where: { product_id } });
+  await prisma.master_product.update({
+    where: { id: product_id },
+    data: { status: count > 0 ? "active" : "draft" },
+  });
+};
+
 const createProductStandard = async (req, res) => {
   try {
     const input = Array.isArray(req.body) ? req.body : [req.body];
@@ -83,6 +91,10 @@ const createProductStandard = async (req, res) => {
       }
     }
     const data = await prisma.product_standards.createMany({ data: input });
+    // Update status product terkait
+    if (input[0] && input[0].product_id) {
+      await updateProductStatusByStandard(input[0].product_id);
+    }
     res.status(201).json({ status: "success", data });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
@@ -144,7 +156,15 @@ const updateProductStandard = async (req, res) => {
 const deleteProductStandard = async (req, res) => {
   const { id } = req.params;
   try {
+    // Cari product_id sebelum delete
+    const standard = await prisma.product_standards.findUnique({
+      where: { id: parseInt(id) },
+    });
     await prisma.product_standards.delete({ where: { id: parseInt(id) } });
+    // Update status product terkait
+    if (standard && standard.product_id) {
+      await updateProductStatusByStandard(standard.product_id);
+    }
     res.json({ status: "success", message: "Deleted" });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });

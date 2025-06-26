@@ -1,6 +1,23 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+// Helper function untuk mengupdate quantityCheck
+async function updateQuantityCheck(planningId) {
+  const planningDetails = await prisma.planning_detail.findMany({
+    where: { idPlanning: parseInt(planningId) },
+    select: { qty: true },
+  });
+  const totalQuantityCheck = planningDetails.reduce(
+    (sum, detail) => sum + (detail.qty || 0),
+    0
+  );
+
+  await prisma.planning_header.update({
+    where: { id: parseInt(planningId) },
+    data: { quantityCheck: totalQuantityCheck },
+  });
+}
+
 const planningHeaderController = {
   // Create new planningHeader
   async create(req, res) {
@@ -70,10 +87,18 @@ const planningHeaderController = {
         }),
         prisma.planning_header.count({ where }),
       ]);
+
+      // Gunakan quantityPrint dan quantityCheck yang sudah disimpan di database
+      const planningsWithQuantities = plannings.map((planning) => ({
+        ...planning,
+        totalQtyPrinted: planning.quantityPrint || 0,
+        totalQtyCheck: planning.quantityCheck || 0,
+      }));
+
       res.json({
         status: "success",
         message: "Data planning berhasil diambil",
-        data: plannings,
+        data: planningsWithQuantities,
         pagination: {
           total,
           page: parseInt(page),
@@ -108,10 +133,15 @@ const planningHeaderController = {
           .status(404)
           .json({ status: "error", message: "Planning tidak ditemukan" });
       }
+
       res.json({
         status: "success",
         message: "Planning berhasil diambil",
-        data: planning,
+        data: {
+          ...planning,
+          totalQtyPrinted: planning.quantityPrint || 0,
+          totalQtyCheck: planning.quantityCheck || 0,
+        },
       });
     } catch (error) {
       res.status(500).json({
@@ -166,8 +196,7 @@ const planningHeaderController = {
   // CRUD PlanningDetail
   async createDetail(req, res) {
     try {
-      const { idPlanning, deltaL, deltaA, deltaB, qty } = req.body;
-      // Validasi planningHeader ada
+      const { idPlanning, qty } = req.body;
       const planning = await prisma.planning_header.findUnique({
         where: { id: idPlanning },
       });
@@ -198,17 +227,38 @@ const planningHeaderController = {
         });
       }
       function hitungMagnitude(x, y, z) {
+        if (
+          typeof x !== "number" ||
+          typeof y !== "number" ||
+          typeof z !== "number"
+        ) {
+          return null;
+        }
         return Math.sqrt(x * x + y * y + z * z);
       }
-      let deltaE = null;
-      if (
-        typeof deltaL === "number" &&
-        typeof deltaA === "number" &&
-        typeof deltaB === "number"
-      ) {
-        deltaE = hitungMagnitude(deltaL, deltaA, deltaB);
+      const {
+        tintDeltaL,
+        tintDeltaA,
+        tintDeltaB,
+        colorDeltaL,
+        colorDeltaA,
+        colorDeltaB,
+      } = req.body;
+      const tintDeltaE = hitungMagnitude(tintDeltaL, tintDeltaA, tintDeltaB);
+      const colorDeltaE = hitungMagnitude(
+        colorDeltaL,
+        colorDeltaA,
+        colorDeltaB
+      );
+
+      if (planning.status === "close") {
+        return res.status(400).json({
+          status: "error",
+          message:
+            "Tidak dapat mengupdate detail pada planning yang sudah di-close.",
+        });
       }
-      // QC Judgement logic
+
       let qcJudgment = "Passed";
       const standards = await prisma.product_standards.findMany({
         where: { product_id: planning.idProduct },
@@ -246,10 +296,55 @@ const planningHeaderController = {
           }
         }
       }
+
+      // Bersihkan data sebelum create - ubah string kosong menjadi null dan string angka menjadi number untuk field Float
+      const cleanData = { ...req.body };
+      const floatFields = [
+        "dispersibility",
+        "contamination",
+        "macaroni",
+        "pelletLength",
+        "pelletDiameter",
+        "moisture",
+        "carbonContent",
+        "foreignMatter",
+        "weightOfChips",
+        "intrinsicViscosity",
+        "ashContent",
+        "heatStability",
+        "lightFastness",
+        "granule",
+        "tintDeltaL",
+        "tintDeltaA",
+        "tintDeltaB",
+        "colorDeltaL",
+        "colorDeltaA",
+        "colorDeltaB",
+        "deltaP",
+        "density",
+        "mfr",
+      ];
+
+      floatFields.forEach((field) => {
+        if (
+          cleanData[field] === "" ||
+          cleanData[field] === undefined ||
+          cleanData[field] === null
+        ) {
+          cleanData[field] = null;
+        } else if (
+          typeof cleanData[field] === "string" &&
+          !isNaN(cleanData[field])
+        ) {
+          cleanData[field] = parseFloat(cleanData[field]);
+        }
+      });
+
       const detail = await prisma.planning_detail.create({
         data: {
-          ...req.body,
-          deltaE,
+          ...cleanData,
+          tintDeltaE,
+          colorDeltaE,
           qcJudgment,
           createdBy: req.user.id,
         },
@@ -261,6 +356,7 @@ const planningHeaderController = {
         where: { id: idPlanning },
         data: { status: "progress" },
       });
+      await updateQuantityCheck(idPlanning);
       res.status(201).json({
         status: "success",
         message: "Detail berhasil dibuat",
@@ -318,12 +414,13 @@ const planningHeaderController = {
         });
         return { ...detail, qcDetail };
       });
-      // Hitung total qty
-      const totalQtyCheck = detailsWithQC.reduce(
-        (sum, d) => sum + (d.qty || 0),
-        0
-      );
-      res.json({ status: "success", totalQtyCheck, data: detailsWithQC });
+
+      res.json({
+        status: "success",
+        totalQtyCheck: planning.quantityCheck || 0,
+        totalQtyPrinted: planning.quantityPrint || 0,
+        data: detailsWithQC,
+      });
     } catch (error) {
       res.status(500).json({
         status: "error",
@@ -384,11 +481,7 @@ const planningHeaderController = {
         });
         return { ...detail, qcDetail };
       });
-      // Hitung total qty
-      const totalQtyCheck = detailsWithQC.reduce(
-        (sum, d) => sum + (d.qty || 0),
-        0
-      );
+
       // Susun header sesuai permintaan
       const header = {
         id: planning.id,
@@ -409,7 +502,8 @@ const planningHeaderController = {
       };
       res.json({
         status: "success",
-        totalQtyCheck,
+        totalQtyCheck: planning.quantityCheck || 0,
+        totalQtyPrinted: planning.quantityPrint || 0,
         header,
         data: detailsWithQC,
       });
@@ -440,8 +534,81 @@ const planningHeaderController = {
         where: { id: detailOld.idPlanning },
       });
 
-      // Gabungkan data lama dengan data update untuk evaluasi QC
+      // Validasi status planning
+      if (planning.status === "close") {
+        return res.status(400).json({
+          status: "error",
+          message:
+            "Tidak dapat mengupdate detail pada planning yang sudah di-close.",
+        });
+      }
+
+      // Gabungkan data lama dengan data update
       const mergedData = { ...detailOld, ...updateData };
+
+      // Bersihkan data sebelum update - ubah string kosong menjadi null dan string angka menjadi number untuk field Float
+      const floatFields = [
+        "dispersibility",
+        "contamination",
+        "macaroni",
+        "pelletLength",
+        "pelletDiameter",
+        "moisture",
+        "carbonContent",
+        "foreignMatter",
+        "weightOfChips",
+        "intrinsicViscosity",
+        "ashContent",
+        "heatStability",
+        "lightFastness",
+        "granule",
+        "tintDeltaL",
+        "tintDeltaA",
+        "tintDeltaB",
+        "colorDeltaL",
+        "colorDeltaA",
+        "colorDeltaB",
+        "deltaP",
+        "density",
+        "mfr",
+      ];
+
+      floatFields.forEach((field) => {
+        if (
+          mergedData[field] === "" ||
+          mergedData[field] === undefined ||
+          mergedData[field] === null
+        ) {
+          mergedData[field] = null;
+        } else if (
+          typeof mergedData[field] === "string" &&
+          !isNaN(mergedData[field])
+        ) {
+          mergedData[field] = parseFloat(mergedData[field]);
+        }
+      });
+
+      // Hitung ulang tintDeltaE dan colorDeltaE
+      function hitungMagnitude(x, y, z) {
+        if (
+          typeof x !== "number" ||
+          typeof y !== "number" ||
+          typeof z !== "number"
+        ) {
+          return null;
+        }
+        return Math.sqrt(x * x + y * y + z * z);
+      }
+      mergedData.tintDeltaE = hitungMagnitude(
+        mergedData.tintDeltaL,
+        mergedData.tintDeltaA,
+        mergedData.tintDeltaB
+      );
+      mergedData.colorDeltaE = hitungMagnitude(
+        mergedData.colorDeltaL,
+        mergedData.colorDeltaA,
+        mergedData.colorDeltaB
+      );
 
       // QC Judgement logic
       let qcJudgment = "Passed";
@@ -481,11 +648,14 @@ const planningHeaderController = {
           }
         }
       }
+      mergedData.qcJudgment = qcJudgment;
+
       const detail = await prisma.planning_detail.update({
         where: { id: parseInt(id) },
-        data: { ...mergedData, qcJudgment },
+        data: mergedData,
         include: { creator: { select: { fullName: true } } },
       });
+      await updateQuantityCheck(detailOld.idPlanning);
       res.json({
         status: "success",
         message: "Detail berhasil diperbarui",
@@ -513,6 +683,7 @@ const planningHeaderController = {
           .status(404)
           .json({ status: "error", message: "Detail tidak ditemukan" });
       }
+
       if (detailToDelete.planningHeader.status === "close") {
         return res.status(400).json({
           status: "error",
@@ -531,6 +702,7 @@ const planningHeaderController = {
           data: { status: "open" },
         });
       }
+      await updateQuantityCheck(idPlanning);
       res.json({ status: "success", message: "Detail berhasil dihapus" });
     } catch (error) {
       res.status(500).json({

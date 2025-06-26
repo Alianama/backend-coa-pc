@@ -1,6 +1,66 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+// Helper function untuk mengupdate quantityPrint
+async function updateQuantityPrint(planningId) {
+  const printedCoas = await prisma.print_coa.findMany({
+    where: { planningId: parseInt(planningId) },
+    select: { quantity: true },
+  });
+  const totalQuantityPrint = printedCoas.reduce(
+    (sum, printCoa) => sum + (printCoa.quantity || 0),
+    0
+  );
+
+  await prisma.planning_header.update({
+    where: { id: parseInt(planningId) },
+    data: { quantityPrint: totalQuantityPrint },
+  });
+}
+
+// Helper function untuk memetakan field dari planning_detail ke print_coa
+function mapPlanningDetailToPrintCoa(planningDetail, mandatoryFields) {
+  const mappedData = {};
+
+  // Mapping field berdasarkan mandatory fields customer
+  mandatoryFields.forEach((mandatoryField) => {
+    const fieldName = mandatoryField.fieldName;
+
+    // Mapping field yang mungkin berbeda nama
+    const fieldMapping = {
+      pelletLength: planningDetail.pelletLength,
+      pelletDiameter: planningDetail.pelletDiameter,
+      pelletVisual: planningDetail.visualCheck, // mapping dari visualCheck
+      color: planningDetail.color,
+      dispersibility: planningDetail.dispersibility,
+      mfr: planningDetail.mfr,
+      density: planningDetail.density,
+      moisture: planningDetail.moisture,
+      carbonContent: planningDetail.carbonContent,
+      foreignMatter: planningDetail.foreignMatter,
+      weightOfChips: planningDetail.weightOfChips,
+      intrinsicViscosity: planningDetail.intrinsicViscosity,
+      ashContent: planningDetail.ashContent,
+      heatStability: planningDetail.heatStability,
+      lightFastness: planningDetail.lightFastness,
+      granule: planningDetail.granule,
+      macaroni: planningDetail.macaroni,
+      tintDeltaE: planningDetail.tintDeltaE,
+      colorDeltaE: planningDetail.colorDeltaE,
+      deltaP: planningDetail.deltaP,
+    };
+
+    if (
+      fieldMapping[fieldName] !== undefined &&
+      fieldMapping[fieldName] !== null
+    ) {
+      mappedData[fieldName] = fieldMapping[fieldName];
+    }
+  });
+
+  return mappedData;
+}
+
 const printCoaController = {
   // Print COA dari Planning
   async print(req, res) {
@@ -8,13 +68,14 @@ const printCoaController = {
       const { planningId } = req.params;
       const { quantity } = req.body;
 
-      // 1. Validasi Input Kuantitas
+      // 1. Validasi Input
       if (quantity === undefined || quantity === null) {
         return res.status(400).json({
           status: "error",
           message: "Field 'quantity' harus ada di body request.",
         });
       }
+
       const parsedQuantity = parseFloat(quantity);
       if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
         return res.status(400).json({
@@ -23,17 +84,16 @@ const printCoaController = {
         });
       }
 
-      // 2. Ambil Data Planning dan Detail QC "Passed" pertama
+      // 2. Ambil Data Planning Header dengan Customer dan Product
       const planningHeader = await prisma.planning_header.findUnique({
         where: { id: parseInt(planningId) },
         include: {
-          customer: { include: { mandatoryFields: true } },
-          product: true,
-          planningDetails: {
-            where: { qcJudgment: "Passed" },
-            orderBy: { createdAt: "asc" },
-            take: 1,
+          customer: {
+            include: {
+              mandatoryFields: true,
+            },
           },
+          product: true,
         },
       });
 
@@ -43,43 +103,52 @@ const printCoaController = {
           message: "Planning Header tidak ditemukan",
         });
       }
-      if (
-        !planningHeader.planningDetails ||
-        planningHeader.planningDetails.length === 0
-      ) {
+
+      // 3. Ambil Planning Detail pertama dengan qcJudgment "Passed"
+      const planningDetail = await prisma.planning_detail.findFirst({
+        where: {
+          idPlanning: parseInt(planningId),
+          qcJudgment: "Passed",
+        },
+        orderBy: { id: "asc" }, // Ambil yang pertama berdasarkan ID
+      });
+
+      if (!planningDetail) {
         return res.status(404).json({
           status: "error",
-          message: "Tidak ditemukan detail planning dengan QC status 'Passed'.",
+          message:
+            "Tidak ada Planning Detail dengan QC Judgment 'Passed' ditemukan",
         });
       }
-      const firstPassedDetail = planningHeader.planningDetails[0];
 
-      // 3. Validasi Kuantitas Cetak vs Kuantitas Check
-      if (parsedQuantity > firstPassedDetail.qty) {
+      // 4. Validasi QC Judgment (double check)
+      if (planningDetail.qcJudgment !== "Passed") {
         return res.status(400).json({
           status: "error",
-          message: `Kuantitas print (${parsedQuantity}) tidak boleh melebihi kuantitas check (${firstPassedDetail.qty}).`,
+          message: "Planning Detail harus memiliki QC Judgment 'Passed'",
         });
       }
 
-      // 4. Validasi Kuantitas Cetak vs Kuantitas Planning
-      const previousPrints = await prisma.print_coa.findMany({
-        where: { planningId: parseInt(planningId) },
-      });
-      const totalPrintedQuantity = previousPrints.reduce(
-        (total, p) => total + (p.quantity || 0),
-        0
-      );
+      // 5. Validasi Total Kuantitas Print vs Total Quantity Check
+      const totalPrintedQuantity = planningHeader.quantityPrint || 0;
+      const totalQuantityAfterPrint = totalPrintedQuantity + parsedQuantity;
 
-      if (totalPrintedQuantity + parsedQuantity > planningHeader.qtyPlanning) {
+      if (totalQuantityAfterPrint > planningHeader.quantityCheck) {
         return res.status(400).json({
           status: "error",
-          message: `Total kuantitas print (${
-            totalPrintedQuantity + parsedQuantity
-          }) akan melebihi kuantitas planning (${planningHeader.qtyPlanning}).`,
+          message: `Total kuantitas print setelah operasi ini (${totalQuantityAfterPrint}) tidak boleh melebihi total quantity check (${planningHeader.quantityCheck}). Kuantitas yang sudah di-print: ${totalPrintedQuantity}, kuantitas baru: ${parsedQuantity}`,
         });
       }
 
+      // 6. Validasi Total Kuantitas Print vs Kuantitas Planning
+      if (totalQuantityAfterPrint > planningHeader.qtyPlanning) {
+        return res.status(400).json({
+          status: "error",
+          message: `Total kuantitas print (${totalQuantityAfterPrint}) akan melebihi kuantitas planning (${planningHeader.qtyPlanning}).`,
+        });
+      }
+
+      // 7. Validasi Status Planning
       if (planningHeader.status !== "progress") {
         return res.status(400).json({
           status: "error",
@@ -87,46 +156,44 @@ const printCoaController = {
         });
       }
 
+      // 8. Ambil data user yang melakukan print
       const currentUser = await prisma.user.findUnique({
         where: { id: req.user.id },
         select: { username: true },
       });
 
-      // Siapkan data dasar untuk di-print
+      // 9. Map data dari planning detail sesuai mandatory fields
+      const detailDataForPrint = mapPlanningDetailToPrintCoa(
+        planningDetail,
+        planningHeader.customer.mandatoryFields
+      );
+
+      // 10. Siapkan data untuk print COA
       const printData = {
         planningId: parseInt(planningId),
         costumerName: planningHeader.customer.name,
         productId: planningHeader.idProduct,
-        pelletVisual: firstPassedDetail.visualCheck,
         productName: planningHeader.product.productName,
         lotNumber: planningHeader.lotNumber,
         letDownRatio: planningHeader.ratio,
         resin: planningHeader.resin,
         mfgDate: planningHeader.mfgDate,
         expiryDate: planningHeader.expiryDate,
-        quantity: parsedQuantity, // Menggunakan quantity dari body
-        analysisDate: firstPassedDetail.analysisDate,
+        quantity: parsedQuantity,
+        analysisDate: planningDetail.analysisDate,
         printedBy: req.user.id,
         issueBy: currentUser.username,
+        status: "REQUESTED", // Default status
+        ...detailDataForPrint,
       };
 
-      // Ambil field wajib dari customer dan isi datanya dari detail planning
-      const mandatoryFields = planningHeader.customer.mandatoryFields.map(
-        (f) => f.fieldName
-      );
-
-      for (const field of mandatoryFields) {
-        if (
-          firstPassedDetail.hasOwnProperty(field) &&
-          firstPassedDetail[field] !== null
-        ) {
-          printData[field] = firstPassedDetail[field];
-        }
-      }
-
+      // 11. Buat print COA
       const newPrintedCoa = await prisma.print_coa.create({
         data: printData,
       });
+
+      // 12. Update quantityPrint di planning_header
+      await updateQuantityPrint(planningId);
 
       res.status(201).json({
         status: "success",
@@ -146,10 +213,10 @@ const printCoaController = {
   // Get all printed COAs
   async getAll(req, res) {
     try {
-      const { page = 1, limit = 100, search = "" } = req.query;
+      const { page = 1, limit = 100, search = "", status } = req.query;
       const skip = (page - 1) * limit;
 
-      // Filter hanya data yang memiliki nilai
+      // Build where clause
       const where = {
         AND: [
           {
@@ -160,35 +227,13 @@ const printCoaController = {
               { issueBy: { contains: search } },
             ],
           },
-          {
-            OR: [
-              { quantity: { not: null } },
-              { pelletLength: { not: null } },
-              { pelletDiameter: { not: null } },
-              { pelletVisual: { not: null } },
-              { color: { not: null } },
-              { dispersibility: { not: null } },
-              { mfr: { not: null } },
-              { density: { not: null } },
-              { moisture: { not: null } },
-              { carbonContent: { not: null } },
-              { mfgDate: { not: null } },
-              { expiryDate: { not: null } },
-              { analysisDate: { not: null } },
-              { foreignMatter: { not: null } },
-              { weightOfChips: { not: null } },
-              { intrinsicViscosity: { not: null } },
-              { ashContent: { not: null } },
-              { heatStability: { not: null } },
-              { lightFastness: { not: null } },
-              { granule: { not: null } },
-              { deltaE: { not: null } },
-              { macaroni: { not: null } },
-              { letDownRatio: { not: null } },
-            ],
-          },
         ],
       };
+
+      // Add status filter if provided
+      if (status && ["REQUESTED", "APPROVED", "REJECTED"].includes(status)) {
+        where.AND.push({ status: status });
+      }
 
       const [printedCoas, total] = await Promise.all([
         prisma.print_coa.findMany({
@@ -198,7 +243,7 @@ const printCoaController = {
           orderBy: { printedDate: "desc" },
           include: {
             creator: {
-              select: { username: true },
+              select: { fullName: true },
             },
           },
         }),
@@ -256,6 +301,199 @@ const printCoaController = {
       res.status(500).json({
         status: "error",
         message: "Terjadi kesalahan saat mengambil data COA yang di-print",
+        error: error.message,
+      });
+    }
+  },
+
+  // Delete printed COA by ID
+  async delete(req, res) {
+    try {
+      const { id } = req.params;
+
+      // Ambil data print COA sebelum dihapus untuk mendapatkan planningId
+      const printedCoa = await prisma.print_coa.findUnique({
+        where: { id: parseInt(id) },
+        select: { planningId: true, status: true },
+      });
+
+      if (!printedCoa) {
+        return res.status(404).json({
+          status: "error",
+          message: "Data COA yang di-print tidak ditemukan",
+        });
+      }
+
+      // Validasi status - hanya bisa hapus jika status REQUESTED
+      if (printedCoa.status !== "REQUESTED") {
+        return res.status(400).json({
+          status: "error",
+          message: "Hanya COA dengan status REQUESTED yang dapat dihapus",
+        });
+      }
+
+      // Hapus print COA
+      await prisma.print_coa.delete({
+        where: { id: parseInt(id) },
+      });
+
+      // Update quantityPrint di planning_header
+      await updateQuantityPrint(printedCoa.planningId);
+
+      res.json({
+        status: "success",
+        message: "Data COA yang di-print berhasil dihapus",
+      });
+    } catch (error) {
+      console.error("Error deleting printed COA:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Terjadi kesalahan saat menghapus data COA yang di-print",
+        error: error.message,
+      });
+    }
+  },
+
+  // Handler untuk approve print COA
+  async approvePrintCoa(req, res) {
+    try {
+      const { id } = req.params;
+
+      // Cek apakah print COA ada
+      const printedCoa = await prisma.print_coa.findUnique({
+        where: { id: parseInt(id) },
+      });
+
+      if (!printedCoa) {
+        return res.status(404).json({
+          status: "error",
+          message: "Data COA yang di-print tidak ditemukan",
+        });
+      }
+
+      // Validasi status - hanya bisa approve jika status REQUESTED
+      if (printedCoa.status !== "REQUESTED") {
+        return res.status(400).json({
+          status: "error",
+          message: "Hanya COA dengan status REQUESTED yang dapat di-approve",
+        });
+      }
+
+      const updated = await prisma.print_coa.update({
+        where: { id: parseInt(id) },
+        data: {
+          status: "APPROVED",
+          approvedBy: req.user.id,
+          approvedDate: new Date(),
+        },
+      });
+
+      res.json({
+        status: "success",
+        message: "Print COA berhasil di-approve",
+        data: updated,
+      });
+    } catch (error) {
+      console.error("Error approving print COA:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Gagal approve print COA",
+        error: error.message,
+      });
+    }
+  },
+
+  // Handler untuk reject print COA
+  async rejectPrintCoa(req, res) {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+
+      // Cek apakah print COA ada
+      const printedCoa = await prisma.print_coa.findUnique({
+        where: { id: parseInt(id) },
+      });
+
+      if (!printedCoa) {
+        return res.status(404).json({
+          status: "error",
+          message: "Data COA yang di-print tidak ditemukan",
+        });
+      }
+
+      // Validasi status - hanya bisa reject jika status REQUESTED
+      if (printedCoa.status !== "REQUESTED") {
+        return res.status(400).json({
+          status: "error",
+          message: "Hanya COA dengan status REQUESTED yang dapat di-reject",
+        });
+      }
+
+      const updated = await prisma.print_coa.update({
+        where: { id: parseInt(id) },
+        data: {
+          status: "REJECTED",
+          approvedBy: req.user.id,
+          approvedDate: new Date(),
+        },
+      });
+
+      res.json({
+        status: "success",
+        message: "Print COA berhasil di-reject",
+        data: updated,
+      });
+    } catch (error) {
+      console.error("Error rejecting print COA:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Gagal reject print COA",
+        error: error.message,
+      });
+    }
+  },
+
+  // Get print COA by planning ID
+  async getByPlanningId(req, res) {
+    try {
+      const { planningId } = req.params;
+      const { page = 1, limit = 100 } = req.query;
+      const skip = (page - 1) * limit;
+
+      const [printedCoas, total] = await Promise.all([
+        prisma.print_coa.findMany({
+          where: { planningId: parseInt(planningId) },
+          skip: parseInt(skip),
+          take: parseInt(limit),
+          orderBy: { printedDate: "desc" },
+          include: {
+            creator: {
+              select: { username: true },
+            },
+          },
+        }),
+        prisma.print_coa.count({
+          where: { planningId: parseInt(planningId) },
+        }),
+      ]);
+
+      res.json({
+        status: "success",
+        message: "Data COA yang di-print berdasarkan planning berhasil diambil",
+        data: printedCoas,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching printed COAs by planning:", error);
+      res.status(500).json({
+        status: "error",
+        message:
+          "Terjadi kesalahan saat mengambil data COA yang di-print berdasarkan planning",
         error: error.message,
       });
     }
