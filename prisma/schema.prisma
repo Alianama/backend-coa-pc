@@ -51,7 +51,6 @@ model print_coa {
   pelletLength       Float?    @map("pellet_length")
   pelletDiameter     Float?    @map("pellet_diameter")
   pelletVisual       String?   @map("pellet_visual")
-  color              String?
   dispersibility     Float?
   mfr                Float?
   density            Float?
@@ -78,6 +77,11 @@ model print_coa {
   createdAt          DateTime  @default(now()) @map("created_at")
   printedBy          Int?      @map("printed_by")
   creator            user?     @relation("printedBy", fields: [printedBy], references: [id])
+  caCO3              Float?    @map("ca_co3")
+  odor               String?   @map("odor")
+  nucleatingAgent    String?   @map("nucleating_agent")
+  hals               String?   @map("hals")
+  hiding             String?   @map("hiding")
 
   @@map("print_coa")
 }
@@ -123,7 +127,7 @@ model master_product {
   productName        String    @map("product_name")
   resin              String?
   letDownRatio       String?   @map("let_down_ratio")
-  color              String?
+  expiredAge         Float?    @map("expired_age")
   status             String    @default("draft")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
@@ -157,7 +161,6 @@ model deleted_coa {
   pelletLength       Float?    @map("pellet_length")
   pelletHeight       Float?    @map("pellet_height")
   pelletVisual       Boolean?  @map("pellet_visual")
-  color              String?
   dispersibility     String?
   mfr                Float?
   density            Float?
@@ -197,28 +200,42 @@ model deleted_coa {
 }
 
 model master_customer {
-  id              Int      @id @default(autoincrement())
-  name            String
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  mandatoryFields mandatory_field[]
-  planningHeaders planning_header[] @relation("CustomerPlanningHeader")
+  id                        Int      @id @default(autoincrement())
+  name                      String
+  pelletLength              Boolean? @default(false) @map("pellet_length")
+  pelletDiameter            Boolean? @default(false) @map("pellet_diameter")
+  visualCheck               Boolean? @default(false) @map("visual_check")
+  colorCheck                Boolean? @default(false) @map("color_check")
+  dispersibility            Boolean? @default(false) @map("dispersibility")
+  mfr                       Boolean? @default(false) @map("mfr")
+  density                   Boolean? @default(false) @map("density")
+  moisture                  Boolean? @default(false) @map("moisture")
+  carbonContent             Boolean? @default(false) @map("carbon_content")
+  mfgDate                   Boolean? @default(false) @map("mfg_date")
+  expiryDate                Boolean? @default(false) @map("expiry_date")
+  analysisDate              Boolean? @default(false) @map("analysis_date")
+  foreignMatter             Boolean? @default(false) @map("foreign_matter")
+  weightOfChips             Boolean? @default(false) @map("weight_of_chips")
+  intrinsicViscosity        Boolean? @default(false) @map("intrinsic_viscosity")
+  ashContent                Boolean? @default(false) @map("ash_content")
+  heatStability             Boolean? @default(false) @map("heat_stability")
+  lightFastness             Boolean? @default(false) @map("light_fastness")
+  granule                   Boolean? @default(false) @map("granule")
+  tintDeltaE                Boolean? @default(false) @map("tint_delta_e")
+  colorDeltaE               Boolean? @default(false) @map("color_delta_e")
+  deltaP                    Boolean? @default(false) @map("delta_p")
+  macaroni                  Boolean? @default(false) @map("macaroni")
+  caCO3                     Boolean? @default(false) @map("ca_co3")
+  odor                      Boolean? @default(false) @map("odor")
+  nucleatingAgent           Boolean? @default(false) @map("nucleating_agent")
+  hals                      Boolean  @default(false) @map("hals")
+  hiding                    Boolean  @default(false) @map("hiding")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+  planningHeaders           planning_header[] @relation("CustomerPlanningHeader")
 
   @@unique([name])
   @@map("master_customers")
-}
-
-model mandatory_field {
-  id         Int             @id @default(autoincrement())
-  fieldName  String          @map("field_name")
-  customerId Int             @map("customer_id")
-  customer   master_customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  createdAt  DateTime        @default(now()) @map("created_at")
-  updatedAt  DateTime        @updatedAt @map("updated_at")
-
-  @@unique([customerId, fieldName])
-  @@index([fieldName])
-  @@map("mandatory_fields")
 }
 
 model log {
@@ -306,8 +323,12 @@ model planning_detail {
   qcJudgment         String?  @map("qc_judgment")
   analysisDate       DateTime? @map("analysis_date")
   checkedBy          String?  @map("checked_by")
+  caCO3              Float?   @map("ca_co3")
+  odor               String?  @map("odor")
+  nucleatingAgent    String?  @map("nucleating_agent")
+  hals               String?  @map("hals")
+  hiding             String?  @map("hiding")
   remark             String?
-  letDownRatio       String? @map("let_down_ratio")
   planningHeader     planning_header @relation(fields: [idPlanning], references: [id])
   createdBy          Int      @map("created_by")
   createdAt          DateTime @default(now()) @map("created_at")

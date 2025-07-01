@@ -3,16 +3,10 @@ const prisma = new PrismaClient();
 
 // Daftar kolom yang valid dari master_coa
 const VALID_COA_FIELDS = [
-  "productName",
-  "lotNumber",
-  "quantity",
-  "letDownRatio",
-  "resin",
   "pelletLength",
   "pelletDiameter",
   "visualCheck",
   "colorCheck",
-  "color",
   "dispersibility",
   "mfr",
   "density",
@@ -33,7 +27,51 @@ const VALID_COA_FIELDS = [
   "colorDeltaE",
   "deltaP",
   "macaroni",
+  "caCO3",
+  "odor",
+  "nucleatingAgent",
+  "hals",
+  "hiding",
 ];
+
+const FIELD_MAP = {
+  pelletLength: "pelletLength",
+  pelletDiameter: "pelletDiameter",
+  visualCheck: "visualCheck",
+  colorCheck: "colorCheck",
+  dispersibility: "dispersibility",
+  mfr: "mfr",
+  density: "density",
+  moisture: "moisture",
+  carbonContent: "carbonContent",
+  mfgDate: "mfgDate",
+  expiryDate: "expiryDate",
+  analysisDate: "analysisDate",
+  foreignMatter: "foreignMatter",
+  weightOfChips: "weightOfChips",
+  intrinsicViscosity: "intrinsicViscosity",
+  ashContent: "ashContent",
+  heatStability: "heatStability",
+  lightFastness: "lightFastness",
+  granule: "granule",
+  tintDeltaE: "tintDeltaE",
+  colorDeltaE: "colorDeltaE",
+  deltaP: "deltaP",
+  macaroni: "macaroni",
+  caCO3: "caCO3",
+  odor: "odor",
+  nucleatingAgent: "nucleatingAgent",
+  hals: "hals",
+  hiding: "hiding",
+};
+
+function mapMandatoryFieldsToDb(mandatoryFields = {}) {
+  const mapped = {};
+  for (const [input, dbField] of Object.entries(FIELD_MAP)) {
+    mapped[dbField] = !!mandatoryFields[input];
+  }
+  return mapped;
+}
 
 async function createLog(action, description, coaId, userId) {
   try {
@@ -71,63 +109,44 @@ module.exports = {
           message: "Name is required",
         });
       }
-
-      if (!Array.isArray(mandatoryFields)) {
+      // Validasi mandatoryFields jika ada
+      if (mandatoryFields && typeof mandatoryFields !== "object") {
         return res.status(400).json({
           status: "error",
-          message: "Mandatory fields must be an array",
+          message: "Mandatory fields harus berupa object",
         });
       }
-
-      // Validasi setiap field
-      for (const field of mandatoryFields) {
-        if (!VALID_COA_FIELDS.includes(field)) {
-          return res.status(400).json({
-            status: "error",
-            message: `Invalid field name: ${field}`,
-            validFields: VALID_COA_FIELDS,
-          });
+      // Validasi setiap field jika ada mandatoryFields
+      if (mandatoryFields) {
+        for (const field of Object.keys(mandatoryFields)) {
+          if (!VALID_COA_FIELDS.includes(field)) {
+            return res.status(400).json({
+              status: "error",
+              message: `Invalid field name: ${field}`,
+              validFields: VALID_COA_FIELDS,
+            });
+          }
         }
       }
-
-      // Buat customer dan mandatory fields dalam satu transaksi
-      const result = await prisma.$transaction(async (prisma) => {
-        // Buat customer
-        const customer = await prisma.master_customer.create({
-          data: { name },
-        });
-
-        // Buat mandatory fields
-        const mandatoryFieldsData = mandatoryFields.map((fieldName) => ({
-          customerId: customer.id,
-          fieldName,
-        }));
-
-        await prisma.mandatory_field.createMany({
-          data: mandatoryFieldsData,
-        });
-
-        // Ambil data customer lengkap dengan mandatory fields
-        return await prisma.master_customer.findUnique({
-          where: { id: customer.id },
-          include: {
-            mandatoryFields: true,
-          },
-        });
+      // Mapping mandatoryFields ke kolom boolean
+      const mandatoryDbFields = mapMandatoryFieldsToDb(mandatoryFields);
+      // Buat customer
+      const customer = await prisma.master_customer.create({
+        data: {
+          name,
+          ...mandatoryDbFields,
+        },
       });
-
-      // Tambahkan log untuk pembuatan customer
       await createLog(
         "CREATE_CUSTOMER",
-        `Customer "${name}" berhasil dibuat dengan ${mandatoryFields.length} mandatory fields`,
+        `Customer \"${name}\" berhasil dibuat`,
         null,
         req.user?.id
       );
-
       res.status(201).json({
         status: "success",
         message: "Customer berhasil dibuat",
-        data: result,
+        data: customer,
       });
     } catch (error) {
       if (error.code === "P2002") {
@@ -146,20 +165,13 @@ module.exports = {
 
   getAllCustomers: async (req, res) => {
     try {
-      const customers = await prisma.master_customer.findMany({
-        include: {
-          mandatoryFields: true,
-        },
-      });
-
-      // Tambahkan log untuk mengambil semua customer
+      const customers = await prisma.master_customer.findMany();
       await createLog(
         "GET_ALL_CUSTOMERS",
         `Berhasil mengambil ${customers.length} data customer`,
         null,
         req.user?.id
       );
-
       res.status(200).json({
         status: "success",
         message: "Data customer berhasil diambil",
@@ -184,12 +196,8 @@ module.exports = {
           message: "Invalid customer ID",
         });
       }
-
       const customer = await prisma.master_customer.findUnique({
         where: { id: customerId },
-        include: {
-          mandatoryFields: true,
-        },
       });
       if (!customer) {
         return res.status(404).json({
@@ -197,15 +205,12 @@ module.exports = {
           message: "Customer not found",
         });
       }
-
-      // Tambahkan log untuk mengambil customer by ID
       await createLog(
         "GET_CUSTOMER_BY_ID",
         `Berhasil mengambil data customer dengan ID ${customerId}`,
         null,
         req.user?.id
       );
-
       res.status(200).json({
         status: "success",
         message: "Customer berhasil ditemukan",
@@ -231,29 +236,25 @@ module.exports = {
           message: "Invalid customer ID",
         });
       }
-
       // Validasi customer exists
       const existingCustomer = await prisma.master_customer.findUnique({
         where: { id: customerId },
       });
-
       if (!existingCustomer) {
         return res.status(404).json({
           status: "error",
           message: "Customer not found",
         });
       }
-
-      // Validasi mandatory fields jika ada
+      // Validasi mandatoryFields jika ada
+      if (mandatoryFields && typeof mandatoryFields !== "object") {
+        return res.status(400).json({
+          status: "error",
+          message: "Mandatory fields harus berupa object",
+        });
+      }
       if (mandatoryFields) {
-        if (!Array.isArray(mandatoryFields)) {
-          return res.status(400).json({
-            status: "error",
-            message: "Mandatory fields must be an array",
-          });
-        }
-
-        for (const field of mandatoryFields) {
+        for (const field of Object.keys(mandatoryFields)) {
           if (!VALID_COA_FIELDS.includes(field)) {
             return res.status(400).json({
               status: "error",
@@ -263,54 +264,25 @@ module.exports = {
           }
         }
       }
-
-      // Update dalam satu transaksi
-      const result = await prisma.$transaction(async (prisma) => {
-        // Update customer name jika ada
-        const updateData = {};
-        if (name) {
-          updateData.name = name;
-        }
-
-        // Update mandatory fields jika ada
-        if (mandatoryFields) {
-          // Hapus semua mandatory fields yang ada
-          await prisma.mandatory_field.deleteMany({
-            where: { customerId },
-          });
-
-          // Buat mandatory fields baru
-          const mandatoryFieldsData = mandatoryFields.map((fieldName) => ({
-            customerId,
-            fieldName,
-          }));
-
-          await prisma.mandatory_field.createMany({
-            data: mandatoryFieldsData,
-          });
-        }
-
-        // Ambil data customer lengkap dengan mandatory fields
-        return await prisma.master_customer.findUnique({
-          where: { id: customerId },
-          include: {
-            mandatoryFields: true,
-          },
-        });
+      // Mapping mandatoryFields ke kolom boolean
+      const mandatoryDbFields = mapMandatoryFieldsToDb(mandatoryFields);
+      // Update customer
+      const updateData = { ...mandatoryDbFields };
+      if (name) updateData.name = name;
+      const customer = await prisma.master_customer.update({
+        where: { id: customerId },
+        data: updateData,
       });
-
-      // Tambahkan log untuk update customer
       await createLog(
         "UPDATE_CUSTOMER",
         `Customer dengan ID ${customerId} berhasil diupdate`,
         null,
         req.user?.id
       );
-
       res.status(200).json({
         status: "success",
         message: "Customer berhasil diupdate",
-        data: result,
+        data: customer,
       });
     } catch (error) {
       if (error.code === "P2002") {
@@ -371,15 +343,11 @@ module.exports = {
   getValidFields: async (req, res) => {
     try {
       const validFields = [
-        "productName",
-        "lotNumber",
-        "quantity",
         "letDownRatio",
         "resin",
         "pelletLength",
         "pelletDiameter",
         "pelletVisual",
-        "color",
         "dispersibility",
         "mfr",
         "density",
@@ -388,7 +356,6 @@ module.exports = {
         "mfgDate",
         "expiryDate",
         "analysisDate",
-        "printedDate",
         "foreignMatter",
         "weightOfChips",
         "intrinsicViscosity",
@@ -398,8 +365,13 @@ module.exports = {
         "granule",
         "tintDeltaE",
         "colorDeltaE",
-        "DeltaP",
+        "deltaP",
         "macaroni",
+        "caCO3",
+        "odor",
+        "nucleatingAgent",
+        "hals",
+        "hiding",
       ];
 
       // Tambahkan log untuk mengambil valid fields

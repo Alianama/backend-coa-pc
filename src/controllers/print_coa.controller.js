@@ -24,14 +24,19 @@ function mapPlanningDetailToPrintCoa(planningDetail, mandatoryFields) {
 
   // Mapping field berdasarkan mandatory fields customer
   mandatoryFields.forEach((mandatoryField) => {
-    const fieldName = mandatoryField.fieldName;
+    const fieldName = mandatoryField;
 
     // Mapping field yang mungkin berbeda nama
     const fieldMapping = {
       pelletLength: planningDetail.pelletLength,
       pelletDiameter: planningDetail.pelletDiameter,
-      pelletVisual: planningDetail.visualCheck, // mapping dari visualCheck
-      color: planningDetail.color,
+      visualCheck: planningDetail.visualCheck,
+      colorCheck: planningDetail.colorCheck,
+      caCO3: planningDetail.caCO3,
+      odor: planningDetail.odor,
+      nucleatingAgent: planningDetail.nucleatingAgent,
+      hals: planningDetail.hals,
+      hiding: planningDetail.hiding,
       dispersibility: planningDetail.dispersibility,
       mfr: planningDetail.mfr,
       density: planningDetail.density,

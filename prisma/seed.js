@@ -17,7 +17,6 @@ async function main() {
     await prisma.product_standards.deleteMany();
     await prisma.planning_detail.deleteMany();
     await prisma.planning_header.deleteMany();
-    await prisma.mandatory_field.deleteMany();
     await prisma.master_customer.deleteMany();
     await prisma.master_product.deleteMany();
 

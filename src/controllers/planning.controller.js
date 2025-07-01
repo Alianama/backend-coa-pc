@@ -571,6 +571,11 @@ const planningHeaderController = {
         "deltaP",
         "density",
         "mfr",
+        "caCO3",
+        "odor",
+        "nucleatingAgent",
+        "hals",
+        "hiding",
       ];
 
       floatFields.forEach((field) => {
