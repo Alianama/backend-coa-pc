@@ -23,6 +23,25 @@ const planningHeaderController = {
   async create(req, res) {
     try {
       const data = req.body;
+      // Ambil expiredAge dari product
+      const product = await prisma.master_product.findUnique({
+        where: { id: data.idProduct },
+        select: { expiredAge: true },
+      });
+      if (!product) {
+        return res.status(400).json({
+          status: "error",
+          message: "Produk tidak ditemukan!",
+        });
+      }
+
+      // Hitung expiryDate
+      const mfgDate = new Date(data.mfgDate);
+      const expiredAge = product.expiredAge || 0;
+      const expiryDate = new Date(
+        mfgDate.setMonth(mfgDate.getMonth() + expiredAge)
+      );
+
       // Validasi lotNumber unik
       const existingLot = await prisma.planning_header.findFirst({
         where: { lotNumber: data.lotNumber },
@@ -35,7 +54,15 @@ const planningHeaderController = {
       }
       const planning = await prisma.planning_header.create({
         data: {
-          ...data,
+          idCustomer: data.idCustomer,
+          idProduct: data.idProduct,
+          resin: data.resin,
+          ratio: data.ratio,
+          moulding: data.moulding,
+          lotNumber: data.lotNumber,
+          qtyPlanning: data.qtyPlanning,
+          mfgDate: data.mfgDate,
+          expiryDate: expiryDate,
           createdBy: req.user.id,
         },
         include: {
@@ -61,17 +88,20 @@ const planningHeaderController = {
     try {
       const { page = 1, limit = 100, search = "" } = req.query;
       const skip = (page - 1) * limit;
-      const where = search
-        ? {
-            OR: [
-              { resin: { contains: search } },
-              { lotNumber: { contains: search } },
-              { moulding: { contains: search } },
-              { customer: { name: { contains: search } } },
-              { product: { productName: { contains: search } } },
-            ],
-          }
-        : {};
+      const where = {
+        isDeleted: false,
+        ...(search
+          ? {
+              OR: [
+                { resin: { contains: search } },
+                { lotNumber: { contains: search } },
+                { moulding: { contains: search } },
+                { customer: { name: { contains: search } } },
+                { product: { productName: { contains: search } } },
+              ],
+            }
+          : {}),
+      };
       const [plannings, total] = await Promise.all([
         prisma.planning_header.findMany({
           where,
@@ -120,12 +150,14 @@ const planningHeaderController = {
     try {
       const { id } = req.params;
       const planning = await prisma.planning_header.findUnique({
-        where: { id: parseInt(id) },
+        where: { id: parseInt(id), isDeleted: false },
         include: {
           creator: { select: { fullName: true } },
           customer: { select: { name: true } },
           product: { select: { productName: true } },
-          planningDetails: true,
+          planningDetails: {
+            where: { isDeleted: false },
+          },
         },
       });
       if (!planning) {
@@ -180,10 +212,22 @@ const planningHeaderController = {
   async delete(req, res) {
     try {
       const { id } = req.params;
-      await prisma.planning_header.delete({
+      const planning = await prisma.planning_header.findUnique({
         where: { id: parseInt(id) },
       });
-      res.json({ status: "success", message: "Planning berhasil dihapus" });
+      if (!planning || planning.isDeleted) {
+        return res
+          .status(404)
+          .json({ status: "error", message: "Planning tidak ditemukan" });
+      }
+      await prisma.planning_header.update({
+        where: { id: parseInt(id) },
+        data: { isDeleted: true },
+      });
+      res.json({
+        status: "success",
+        message: "Planning berhasil dihapus (soft delete)",
+      });
     } catch (error) {
       res.status(500).json({
         status: "error",
@@ -198,7 +242,7 @@ const planningHeaderController = {
     try {
       const { idPlanning, qty } = req.body;
       const planning = await prisma.planning_header.findUnique({
-        where: { id: idPlanning },
+        where: { id: idPlanning, isDeleted: false },
       });
       if (!planning) {
         return res.status(404).json({
@@ -214,7 +258,7 @@ const planningHeaderController = {
         });
       }
       const details = await prisma.planning_detail.findMany({
-        where: { idPlanning },
+        where: { idPlanning, isDeleted: false },
       });
       const totalQtyExisting = details.reduce(
         (sum, d) => sum + (d.qty || 0),
@@ -259,10 +303,11 @@ const planningHeaderController = {
         });
       }
 
-      let qcJudgment = "Passed";
+      let qcJudgment = "NG";
       const standards = await prisma.product_standards.findMany({
         where: { product_id: planning.idProduct },
       });
+      let allPassed = true;
       for (const std of standards) {
         const actual = req.body[std.property_name];
         if (actual === undefined || actual === null) continue;
@@ -271,31 +316,32 @@ const planningHeaderController = {
             actual < std.target_value - (std.tolerance || 0) ||
             actual > std.target_value + (std.tolerance || 0)
           ) {
-            qcJudgment = "NG";
+            allPassed = false;
             break;
           }
         } else if (std.operator === "LESS_THAN") {
           if (!(actual < std.target_value)) {
-            qcJudgment = "NG";
+            allPassed = false;
             break;
           }
         } else if (std.operator === "LESS_EQUAL") {
           if (!(actual <= std.target_value)) {
-            qcJudgment = "NG";
+            allPassed = false;
             break;
           }
         } else if (std.operator === "GREATER_THAN") {
           if (!(actual > std.target_value)) {
-            qcJudgment = "NG";
+            allPassed = false;
             break;
           }
         } else if (std.operator === "GREATER_EQUAL") {
           if (!(actual >= std.target_value)) {
-            qcJudgment = "NG";
+            allPassed = false;
             break;
           }
         }
       }
+      if (allPassed) qcJudgment = "Passed";
 
       // Bersihkan data sebelum create - ubah string kosong menjadi null dan string angka menjadi number untuk field Float
       const cleanData = { ...req.body };
@@ -374,12 +420,12 @@ const planningHeaderController = {
     try {
       const { idPlanning } = req.params;
       const details = await prisma.planning_detail.findMany({
-        where: { idPlanning: parseInt(idPlanning) },
+        where: { idPlanning: parseInt(idPlanning), isDeleted: false },
         include: { creator: { select: { fullName: true } } },
       });
       // Ambil standar produk
       const planning = await prisma.planning_header.findUnique({
-        where: { id: parseInt(idPlanning) },
+        where: { id: parseInt(idPlanning), isDeleted: false },
       });
       const standards = await prisma.product_standards.findMany({
         where: { product_id: planning.idProduct },
@@ -433,7 +479,7 @@ const planningHeaderController = {
     try {
       const { lotNumber } = req.params;
       const planning = await prisma.planning_header.findFirst({
-        where: { lotNumber },
+        where: { lotNumber, isDeleted: false },
         include: {
           customer: { select: { name: true } },
           product: { select: { productName: true } },
@@ -446,11 +492,14 @@ const planningHeaderController = {
         });
       }
       const details = await prisma.planning_detail.findMany({
-        where: { idPlanning: planning.id },
+        where: { idPlanning: planning.id, isDeleted: false },
         include: { creator: { select: { fullName: true } } },
       });
       const standards = await prisma.product_standards.findMany({
-        where: { product_id: planning.idProduct },
+        where: {
+          product_id: planning.idProduct,
+          isDeleted: false,
+        },
       });
       const detailsWithQC = details.map((detail) => {
         const qcDetail = standards.map((std) => {
@@ -520,18 +569,12 @@ const planningHeaderController = {
       const { id } = req.params;
       const { ...updateData } = req.body;
 
-      if (updateData.analysisDate) {
-        updateData.analysisDate = new Date(
-          updateData.analysisDate
-        ).toISOString();
-      }
-
       // Ambil detail dan planning terkait
       const detailOld = await prisma.planning_detail.findUnique({
-        where: { id: parseInt(id) },
+        where: { id: parseInt(id), isDeleted: false },
       });
       const planning = await prisma.planning_header.findUnique({
-        where: { id: detailOld.idPlanning },
+        where: { id: detailOld.idPlanning, isDeleted: false },
       });
 
       // Validasi status planning
@@ -616,10 +659,11 @@ const planningHeaderController = {
       );
 
       // QC Judgement logic
-      let qcJudgment = "Passed";
+      let qcJudgment = "NG";
       const standards = await prisma.product_standards.findMany({
         where: { product_id: planning.idProduct },
       });
+      let allPassed = true;
       for (const std of standards) {
         const actual = mergedData[std.property_name];
         if (actual === undefined || actual === null) continue;
@@ -628,36 +672,85 @@ const planningHeaderController = {
             actual < std.target_value - (std.tolerance || 0) ||
             actual > std.target_value + (std.tolerance || 0)
           ) {
-            qcJudgment = "NG";
+            allPassed = false;
             break;
           }
         } else if (std.operator === "LESS_THAN") {
           if (!(actual < std.target_value)) {
-            qcJudgment = "NG";
+            allPassed = false;
             break;
           }
         } else if (std.operator === "LESS_EQUAL") {
           if (!(actual <= std.target_value)) {
-            qcJudgment = "NG";
+            allPassed = false;
             break;
           }
         } else if (std.operator === "GREATER_THAN") {
           if (!(actual > std.target_value)) {
-            qcJudgment = "NG";
+            allPassed = false;
             break;
           }
         } else if (std.operator === "GREATER_EQUAL") {
           if (!(actual >= std.target_value)) {
-            qcJudgment = "NG";
+            allPassed = false;
             break;
           }
         }
       }
+      if (allPassed) qcJudgment = "Passed";
       mergedData.qcJudgment = qcJudgment;
+
+      const allowedFields = [
+        "qty",
+        "lineNo",
+        "tintDeltaL",
+        "tintDeltaA",
+        "tintDeltaB",
+        "tintDeltaE",
+        "colorDeltaL",
+        "colorDeltaA",
+        "colorDeltaB",
+        "colorDeltaE",
+        "deltaP",
+        "density",
+        "mfr",
+        "dispersibility",
+        "contamination",
+        "macaroni",
+        "pelletLength",
+        "pelletDiameter",
+        "visualCheck",
+        "colorCheck",
+        "moisture",
+        "carbonContent",
+        "foreignMatter",
+        "weightOfChips",
+        "intrinsicViscosity",
+        "ashContent",
+        "heatStability",
+        "lightFastness",
+        "granule",
+        "qcJudgment",
+        "analysisDate",
+        "checkedBy",
+        "caCO3",
+        "odor",
+        "nucleatingAgent",
+        "hals",
+        "hiding",
+        "remark",
+      ];
+      const updatePayload = {};
+      allowedFields.forEach((field) => {
+        if (mergedData[field] !== undefined)
+          updatePayload[field] = mergedData[field];
+      });
+      // Pastikan idPlanning tidak ikut
+      delete updatePayload.idPlanning;
 
       const detail = await prisma.planning_detail.update({
         where: { id: parseInt(id) },
-        data: mergedData,
+        data: updatePayload,
         include: { creator: { select: { fullName: true } } },
       });
       await updateQuantityCheck(detailOld.idPlanning);
@@ -683,12 +776,11 @@ const planningHeaderController = {
           planningHeader: true,
         },
       });
-      if (!detailToDelete) {
+      if (!detailToDelete || detailToDelete.isDeleted) {
         return res
           .status(404)
           .json({ status: "error", message: "Detail tidak ditemukan" });
       }
-
       if (detailToDelete.planningHeader.status === "close") {
         return res.status(400).json({
           status: "error",
@@ -697,9 +789,12 @@ const planningHeaderController = {
         });
       }
       const { idPlanning } = detailToDelete;
-      await prisma.planning_detail.delete({ where: { id: parseInt(id) } });
+      await prisma.planning_detail.update({
+        where: { id: parseInt(id) },
+        data: { isDeleted: true },
+      });
       const remainingDetails = await prisma.planning_detail.count({
-        where: { idPlanning },
+        where: { idPlanning, isDeleted: false },
       });
       if (remainingDetails === 0) {
         await prisma.planning_header.update({
@@ -708,7 +803,10 @@ const planningHeaderController = {
         });
       }
       await updateQuantityCheck(idPlanning);
-      res.json({ status: "success", message: "Detail berhasil dihapus" });
+      res.json({
+        status: "success",
+        message: "Detail berhasil dihapus (soft delete)",
+      });
     } catch (error) {
       res.status(500).json({
         status: "error",

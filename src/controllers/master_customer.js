@@ -12,8 +12,6 @@ const VALID_COA_FIELDS = [
   "density",
   "moisture",
   "carbonContent",
-  "mfgDate",
-  "expiryDate",
   "analysisDate",
   "printedDate",
   "foreignMatter",
@@ -44,8 +42,6 @@ const FIELD_MAP = {
   density: "density",
   moisture: "moisture",
   carbonContent: "carbonContent",
-  mfgDate: "mfgDate",
-  expiryDate: "expiryDate",
   analysisDate: "analysisDate",
   foreignMatter: "foreignMatter",
   weightOfChips: "weightOfChips",
@@ -165,7 +161,9 @@ module.exports = {
 
   getAllCustomers: async (req, res) => {
     try {
-      const customers = await prisma.master_customer.findMany();
+      const customers = await prisma.master_customer.findMany({
+        where: { isDeleted: false },
+      });
       await createLog(
         "GET_ALL_CUSTOMERS",
         `Berhasil mengambil ${customers.length} data customer`,
@@ -197,7 +195,7 @@ module.exports = {
         });
       }
       const customer = await prisma.master_customer.findUnique({
-        where: { id: customerId },
+        where: { id: customerId, isDeleted: false },
       });
       if (!customer) {
         return res.status(404).json({
@@ -238,7 +236,7 @@ module.exports = {
       }
       // Validasi customer exists
       const existingCustomer = await prisma.master_customer.findUnique({
-        where: { id: customerId },
+        where: { id: customerId, isDeleted: false },
       });
       if (!existingCustomer) {
         return res.status(404).json({
@@ -307,28 +305,29 @@ module.exports = {
         where: { id: parseInt(id) },
       });
 
-      if (!existingCustomer) {
+      if (!existingCustomer || existingCustomer.isDeleted) {
         return res.status(404).json({
           status: "error",
           message: "Customer tidak ditemukan",
         });
       }
 
-      const customer = await prisma.master_customer.delete({
+      const customer = await prisma.master_customer.update({
         where: { id: parseInt(id) },
+        data: { isDeleted: true },
       });
 
       // Tambahkan log untuk delete customer
       await createLog(
         "DELETE_CUSTOMER",
-        `Customer "${customer.name}" dengan ID ${id} berhasil dihapus`,
+        `Customer "${customer.name}" dengan ID ${id} berhasil dihapus (soft delete)`,
         null,
         req.user?.id
       );
 
       res.status(200).json({
         status: "success",
-        message: "Customer berhasil dihapus",
+        message: "Customer berhasil dihapus (soft delete)",
         data: customer,
       });
     } catch (error) {
@@ -353,8 +352,6 @@ module.exports = {
         "density",
         "moisture",
         "carbonContent",
-        "mfgDate",
-        "expiryDate",
         "analysisDate",
         "foreignMatter",
         "weightOfChips",

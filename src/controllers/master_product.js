@@ -24,6 +24,7 @@ async function createLog(action, description, userId) {
 const getAllProducts = async (req, res) => {
   try {
     const products = await prisma.master_product.findMany({
+      where: { isDeleted: false },
       include: {
         creator: {
           select: {
@@ -160,6 +161,7 @@ const updateProduct = async (req, res) => {
     const existingProduct = await prisma.master_product.findFirst({
       where: {
         id: productId,
+        isDeleted: false,
       },
     });
 
@@ -173,7 +175,12 @@ const updateProduct = async (req, res) => {
     const product = await prisma.master_product.update({
       where: { id: productId },
       data: {
-        ...productData,
+        productName: productData.productName,
+        resin: productData.resin,
+        letDownRatio: productData.letDownRatio,
+        expiredAge: productData.expiredAge,
+        status: productData.status,
+        isDeleted: productData.isDeleted,
         updatedAt: new Date(),
       },
     });
@@ -213,6 +220,7 @@ const deleteProduct = async (req, res) => {
     const existingProduct = await prisma.master_product.findFirst({
       where: {
         id: productId,
+        isDeleted: false,
       },
     });
 
@@ -223,20 +231,21 @@ const deleteProduct = async (req, res) => {
       });
     }
 
-    // Langsung hapus permanen
-    const deletedProduct = await prisma.master_product.delete({
+    // Soft delete
+    const deletedProduct = await prisma.master_product.update({
       where: { id: productId },
+      data: { isDeleted: true },
     });
 
     await createLog(
       "DELETE_PRODUCT",
-      `Produk "${deletedProduct.productName}" dengan ID ${id} berhasil dihapus secara permanen`,
+      `Produk "${deletedProduct.productName}" dengan ID ${id} berhasil dihapus (soft delete)`,
       req.user?.id
     );
 
     res.status(200).json({
       status: "success",
-      message: "Produk berhasil dihapus secara permanen",
+      message: "Produk berhasil dihapus (soft delete)",
       data: deletedProduct,
     });
   } catch (error) {

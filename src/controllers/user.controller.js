@@ -7,6 +7,7 @@ const userController = {
   async getAllUsers(req, res) {
     try {
       const users = await prisma.user.findMany({
+        where: { isDeleted: false },
         select: {
           id: true,
           username: true,
@@ -65,6 +66,7 @@ const userController = {
   async getAll(req, res) {
     try {
       const users = await prisma.user.findMany({
+        where: { isDeleted: false },
         include: {
           role: true,
         },
@@ -147,12 +149,22 @@ const userController = {
   async delete(req, res) {
     try {
       const { id } = req.params;
-      await prisma.user.delete({
+      const user = await prisma.user.findUnique({
         where: { id: parseInt(id) },
+      });
+      if (!user || user.isDeleted) {
+        return res.status(404).json({
+          status: "error",
+          message: "User tidak ditemukan",
+        });
+      }
+      await prisma.user.update({
+        where: { id: parseInt(id) },
+        data: { isDeleted: true },
       });
       res.json({
         status: "success",
-        message: "User berhasil dihapus",
+        message: "User berhasil dihapus (soft delete)",
       });
     } catch (error) {
       console.error("Error deleting user:", error);

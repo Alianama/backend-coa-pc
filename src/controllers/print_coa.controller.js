@@ -223,6 +223,7 @@ const printCoaController = {
 
       // Build where clause
       const where = {
+        isDeleted: false,
         AND: [
           {
             OR: [
@@ -281,7 +282,7 @@ const printCoaController = {
     try {
       const { id } = req.params;
       const printedCoa = await prisma.print_coa.findUnique({
-        where: { id: parseInt(id) },
+        where: { id: parseInt(id), isDeleted: false },
         include: {
           creator: {
             select: { username: true },
@@ -315,20 +316,17 @@ const printCoaController = {
   async delete(req, res) {
     try {
       const { id } = req.params;
-
       // Ambil data print COA sebelum dihapus untuk mendapatkan planningId
       const printedCoa = await prisma.print_coa.findUnique({
         where: { id: parseInt(id) },
-        select: { planningId: true, status: true },
+        select: { planningId: true, status: true, isDeleted: true },
       });
-
-      if (!printedCoa) {
+      if (!printedCoa || printedCoa.isDeleted) {
         return res.status(404).json({
           status: "error",
           message: "Data COA yang di-print tidak ditemukan",
         });
       }
-
       // Validasi status - hanya bisa hapus jika status REQUESTED
       if (printedCoa.status !== "REQUESTED") {
         return res.status(400).json({
@@ -336,18 +334,16 @@ const printCoaController = {
           message: "Hanya COA dengan status REQUESTED yang dapat dihapus",
         });
       }
-
-      // Hapus print COA
-      await prisma.print_coa.delete({
+      // Soft delete print COA
+      await prisma.print_coa.update({
         where: { id: parseInt(id) },
+        data: { isDeleted: true },
       });
-
       // Update quantityPrint di planning_header
       await updateQuantityPrint(printedCoa.planningId);
-
       res.json({
         status: "success",
-        message: "Data COA yang di-print berhasil dihapus",
+        message: "Data COA yang di-print berhasil dihapus (soft delete)",
       });
     } catch (error) {
       console.error("Error deleting printed COA:", error);
@@ -366,7 +362,7 @@ const printCoaController = {
 
       // Cek apakah print COA ada
       const printedCoa = await prisma.print_coa.findUnique({
-        where: { id: parseInt(id) },
+        where: { id: parseInt(id), isDeleted: false },
       });
 
       if (!printedCoa) {
@@ -416,7 +412,7 @@ const printCoaController = {
 
       // Cek apakah print COA ada
       const printedCoa = await prisma.print_coa.findUnique({
-        where: { id: parseInt(id) },
+        where: { id: parseInt(id), isDeleted: false },
       });
 
       if (!printedCoa) {
@@ -467,7 +463,7 @@ const printCoaController = {
 
       const [printedCoas, total] = await Promise.all([
         prisma.print_coa.findMany({
-          where: { planningId: parseInt(planningId) },
+          where: { planningId: parseInt(planningId), isDeleted: false },
           skip: parseInt(skip),
           take: parseInt(limit),
           orderBy: { printedDate: "desc" },
@@ -478,7 +474,7 @@ const printCoaController = {
           },
         }),
         prisma.print_coa.count({
-          where: { planningId: parseInt(planningId) },
+          where: { planningId: parseInt(planningId), isDeleted: false },
         }),
       ]);
 

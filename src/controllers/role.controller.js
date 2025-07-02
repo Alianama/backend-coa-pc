@@ -6,6 +6,7 @@ const roleController = {
   async getAll(req, res) {
     try {
       const roles = await prisma.role.findMany({
+        where: { isDeleted: false },
         include: {
           permissions: {
             include: {
@@ -115,14 +116,22 @@ const roleController = {
   async delete(req, res) {
     try {
       const { id } = req.params;
-
-      await prisma.role.delete({
+      const role = await prisma.role.findUnique({
         where: { id: parseInt(id) },
       });
-
+      if (!role || role.isDeleted) {
+        return res.status(404).json({
+          status: "error",
+          message: "Role tidak ditemukan",
+        });
+      }
+      await prisma.role.update({
+        where: { id: parseInt(id) },
+        data: { isDeleted: true },
+      });
       res.json({
         status: "success",
-        message: "Role berhasil dihapus",
+        message: "Role berhasil dihapus (soft delete)",
       });
     } catch (error) {
       console.error("Error deleting role:", error);
@@ -135,7 +144,9 @@ const roleController = {
   // Get all permissions
   async getAllPermissions(req, res) {
     try {
-      const permissions = await prisma.permission.findMany();
+      const permissions = await prisma.permission.findMany({
+        where: { isDeleted: false },
+      });
 
       res.json({
         status: "success",
@@ -204,13 +215,20 @@ const roleController = {
   async deletePermission(req, res) {
     try {
       const { id } = req.params;
-
-      await prisma.permission.delete({
+      const permission = await prisma.permission.findUnique({
         where: { id: parseInt(id) },
       });
-
+      if (!permission || permission.isDeleted) {
+        return res.status(404).json({
+          message: "Permission tidak ditemukan",
+        });
+      }
+      await prisma.permission.update({
+        where: { id: parseInt(id) },
+        data: { isDeleted: true },
+      });
       res.json({
-        message: "Permission berhasil dihapus",
+        message: "Permission berhasil dihapus (soft delete)",
       });
     } catch (error) {
       console.error("Error deleting permission:", error);
@@ -224,6 +242,7 @@ const roleController = {
   async getUserRoles(req, res) {
     try {
       const users = await prisma.user.findMany({
+        where: { isDeleted: false },
         include: {
           role: {
             include: {

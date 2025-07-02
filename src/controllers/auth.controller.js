@@ -1,8 +1,12 @@
 const bcrypt = require("bcryptjs");
 const { PrismaClient } = require("@prisma/client");
-// const { generateTokens, verifyRefreshToken } = require("../utils/jwt");
+const {
+  generateTokens,
+  verifyRefreshToken,
+  getTokenPayload,
+} = require("../utils/jwt");
 const { ROLES } = require("../constants/roles");
-const jwt = require("jsonwebtoken");
+// const jwt = require("jsonwebtoken");
 
 const prisma = new PrismaClient();
 
@@ -39,25 +43,8 @@ const authController = {
           .json({ message: "Username atau password salah" });
       }
 
-      const accessToken = jwt.sign(
-        {
-          id: user.id,
-          username: user.username,
-          role: user.role,
-          tokenVersion: user.tokenVersion,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "1h" }
-      );
-
-      const refreshToken = jwt.sign(
-        {
-          id: user.id,
-          tokenVersion: user.tokenVersion,
-        },
-        process.env.JWT_REFRESH_SECRET,
-        { expiresIn: "7d" }
-      );
+      // Generate tokens pakai utils
+      const { accessToken, refreshToken } = generateTokens(user);
 
       res.json({
         message: "success",
@@ -84,7 +71,19 @@ const authController = {
         return res.status(400).json({ message: "Refresh token diperlukan" });
       }
 
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+      let decoded;
+      try {
+        decoded = verifyRefreshToken(refreshToken);
+      } catch (error) {
+        if (error.name === "JsonWebTokenError") {
+          return res.status(401).json({ message: "Token tidak valid" });
+        }
+        if (error.name === "TokenExpiredError") {
+          return res.status(401).json({ message: "Token sudah expired" });
+        }
+        return res.status(401).json({ message: "Refresh token tidak valid" });
+      }
+
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
       });
@@ -93,17 +92,8 @@ const authController = {
         return res.status(401).json({ message: "Refresh token tidak valid" });
       }
 
-      const accessToken = jwt.sign(
-        {
-          id: user.id,
-          username: user.username,
-          fullName: user.fullName,
-          role: user.role,
-          tokenVersion: user.tokenVersion,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "1h" }
-      );
+      // Generate access token baru
+      const { accessToken } = generateTokens(user);
 
       res.json({
         status: "success",
@@ -113,12 +103,6 @@ const authController = {
         },
       });
     } catch (error) {
-      if (error.name === "JsonWebTokenError") {
-        return res.status(401).json({ message: "Token tidak valid" });
-      }
-      if (error.name === "TokenExpiredError") {
-        return res.status(401).json({ message: "Token sudah expired" });
-      }
       res
         .status(500)
         .json({ message: "Terjadi kesalahan saat memperbarui token" });

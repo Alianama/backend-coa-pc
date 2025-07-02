@@ -3,14 +3,18 @@ const prisma = new PrismaClient();
 
 // Daftar field valid dari PlanningDetail
 const VALID_FIELDS = [
-  "lineNo",
-  "deltaL",
-  "deltaA",
-  "deltaB",
-  "deltaE",
+  "colorDeltaL",
+  "colorDeltaA",
+  "colorDeltaB",
+  "colorDeltaE",
+  "tintDeltaL",
+  "tintDeltaA",
+  "tintDeltaB",
+  "tintDeltaE",
+  "deltaP",
   "density",
   "mfr",
-  "dispersion",
+  "dispersibility",
   "contamination",
   "macaroni",
   "pelletLength",
@@ -25,15 +29,18 @@ const VALID_FIELDS = [
   "heatStability",
   "lightFastness",
   "granule",
-  "qcJudgment",
-  "analysisDate",
-  "checkedBy",
-  "remark",
+  "caCO3",
+  "hals",
+  "hiding",
+  "odor",
+  "nucleatingAgent",
 ];
 
 const getAllProductStandards = async (req, res) => {
   try {
-    const data = await prisma.product_standards.findMany();
+    const data = await prisma.product_standards.findMany({
+      where: { isDeleted: false },
+    });
     res.json({ status: "success", data });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
@@ -44,7 +51,7 @@ const getProductStandardsByProduct = async (req, res) => {
   const { product_id } = req.params;
   try {
     const data = await prisma.product_standards.findMany({
-      where: { product_id: parseInt(product_id) },
+      where: { product_id: parseInt(product_id), isDeleted: false },
       include: {
         product: {
           select: {
@@ -69,7 +76,9 @@ const getProductStandardsByProduct = async (req, res) => {
 };
 
 const updateProductStatusByStandard = async (product_id) => {
-  const count = await prisma.product_standards.count({ where: { product_id } });
+  const count = await prisma.product_standards.count({
+    where: { product_id, isDeleted: false },
+  });
   await prisma.master_product.update({
     where: { id: product_id },
     data: { status: count > 0 ? "active" : "draft" },
@@ -160,12 +169,20 @@ const deleteProductStandard = async (req, res) => {
     const standard = await prisma.product_standards.findUnique({
       where: { id: parseInt(id) },
     });
-    await prisma.product_standards.delete({ where: { id: parseInt(id) } });
+    if (!standard || standard.isDeleted) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Data tidak ditemukan" });
+    }
+    await prisma.product_standards.update({
+      where: { id: parseInt(id) },
+      data: { isDeleted: true },
+    });
     // Update status product terkait
     if (standard && standard.product_id) {
       await updateProductStatusByStandard(standard.product_id);
     }
-    res.json({ status: "success", message: "Deleted" });
+    res.json({ status: "success", message: "Deleted (soft delete)" });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
   }

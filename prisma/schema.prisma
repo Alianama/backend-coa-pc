@@ -15,6 +15,7 @@ model user {
   password            String
   roleId              Int            @map("role_id")
   tokenVersion        Int            @default(0) @map("token_version")
+  isDeleted           Boolean        @default(false) @map("is_deleted")
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
   role                role           @relation(fields: [roleId], references: [id])
@@ -78,10 +79,11 @@ model print_coa {
   printedBy          Int?      @map("printed_by")
   creator            user?     @relation("printedBy", fields: [printedBy], references: [id])
   caCO3              Float?    @map("ca_co3")
-  odor               String?   @map("odor")
-  nucleatingAgent    String?   @map("nucleating_agent")
-  hals               String?   @map("hals")
-  hiding             String?   @map("hiding")
+  odor               Float?   @map("odor")
+  nucleatingAgent    Float?   @map("nucleating_agent")
+  hals               Float?   @map("hals")
+  hiding             Float?   @map("hiding")
+  isDeleted          Boolean   @default(false) @map("is_deleted")
 
   @@map("print_coa")
 }
@@ -90,6 +92,7 @@ model role {
   id          Int               @id @default(autoincrement())
   name        String            @unique
   description String?
+  isDeleted   Boolean           @default(false) @map("is_deleted")
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
   users       user[]
@@ -102,6 +105,7 @@ model permission {
   id          Int               @id @default(autoincrement())
   name        String            @unique
   description String?
+  isDeleted   Boolean           @default(false) @map("is_deleted")
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
   roles       role_permission[]
@@ -129,6 +133,7 @@ model master_product {
   letDownRatio       String?   @map("let_down_ratio")
   expiredAge         Float?    @map("expired_age")
   status             String    @default("draft")
+  isDeleted          Boolean   @default(false) @map("is_deleted")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
   createdBy          Int       @map("created_by")
@@ -142,11 +147,12 @@ model master_product {
 model product_standards {
   id            Int            @id @default(autoincrement())
   product_id    Int
-  property_name String
+  property_name String         @unique
   target_value  Float
   tolerance     Float?
   operator      Operator
   unit          String
+  isDeleted     Boolean        @default(false) @map("is_deleted")
   product       master_product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@map("product_standards")
@@ -211,8 +217,6 @@ model master_customer {
   density                   Boolean? @default(false) @map("density")
   moisture                  Boolean? @default(false) @map("moisture")
   carbonContent             Boolean? @default(false) @map("carbon_content")
-  mfgDate                   Boolean? @default(false) @map("mfg_date")
-  expiryDate                Boolean? @default(false) @map("expiry_date")
   analysisDate              Boolean? @default(false) @map("analysis_date")
   foreignMatter             Boolean? @default(false) @map("foreign_matter")
   weightOfChips             Boolean? @default(false) @map("weight_of_chips")
@@ -230,6 +234,7 @@ model master_customer {
   nucleatingAgent           Boolean? @default(false) @map("nucleating_agent")
   hals                      Boolean  @default(false) @map("hals")
   hiding                    Boolean  @default(false) @map("hiding")
+  isDeleted                 Boolean  @default(false) @map("is_deleted")
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
   planningHeaders           planning_header[] @relation("CustomerPlanningHeader")
@@ -278,6 +283,7 @@ model planning_header {
   mfgDate         DateTime  @map("mfg_date")
   expiryDate      DateTime  @map("expiry_date")
   status          Status    @default(open)
+  isDeleted       Boolean   @default(false) @map("is_deleted")
   createdBy       Int       @map("created_by")
   createdAt       DateTime  @default(now()) @map("created_at")
   creator         user      @relation(fields: [createdBy], references: [id])
@@ -324,11 +330,12 @@ model planning_detail {
   analysisDate       DateTime? @map("analysis_date")
   checkedBy          String?  @map("checked_by")
   caCO3              Float?   @map("ca_co3")
-  odor               String?  @map("odor")
-  nucleatingAgent    String?  @map("nucleating_agent")
-  hals               String?  @map("hals")
-  hiding             String?  @map("hiding")
+  odor               Float?  @map("odor")
+  nucleatingAgent    Float?  @map("nucleating_agent")
+  hals               Float?  @map("hals")
+  hiding             Float?  @map("hiding")
   remark             String?
+  isDeleted          Boolean  @default(false) @map("is_deleted")
   planningHeader     planning_header @relation(fields: [idPlanning], references: [id])
   createdBy          Int      @map("created_by")
   createdAt          DateTime @default(now()) @map("created_at")
