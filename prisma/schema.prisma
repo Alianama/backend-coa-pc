@@ -79,11 +79,14 @@ model print_coa {
   printedBy          Int?      @map("printed_by")
   creator            user?     @relation("printedBy", fields: [printedBy], references: [id])
   caCO3              Float?    @map("ca_co3")
-  odor               Float?   @map("odor")
-  nucleatingAgent    Float?   @map("nucleating_agent")
-  hals               Float?   @map("hals")
-  hiding             Float?   @map("hiding")
+  odor               Float?    @map("odor")
+  nucleatingAgent    Float?    @map("nucleating_agent")
+  hals               Float?    @map("hals")
+  hiding             Float?    @map("hiding")
   isDeleted          Boolean   @default(false) @map("is_deleted")
+  remarks            String?   @map("remarks")
+  rejectedBy         Int?      @map("rejected_by")
+  rejectedDate       DateTime? @map("rejected_date")
 
   @@map("print_coa")
 }

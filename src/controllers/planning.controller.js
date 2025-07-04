@@ -309,8 +309,21 @@ const planningHeaderController = {
       });
       let allPassed = true;
       for (const std of standards) {
+        // Jika target_value kosong/null, langsung gagal
+        if (std.target_value === undefined || std.target_value === null) {
+          allPassed = false;
+          break;
+        }
         const actual = req.body[std.property_name];
-        if (actual === undefined || actual === null) continue;
+        // Jika target_value ada tapi actual null/undefined, gagal
+        if (
+          std.target_value !== undefined &&
+          std.target_value !== null &&
+          (actual === undefined || actual === null)
+        ) {
+          allPassed = false;
+          break;
+        }
         if (std.operator === "PLUS_MINUS") {
           if (
             actual < std.target_value - (std.tolerance || 0) ||
@@ -665,8 +678,21 @@ const planningHeaderController = {
       });
       let allPassed = true;
       for (const std of standards) {
+        // Jika target_value kosong/null, langsung gagal
+        if (std.target_value === undefined || std.target_value === null) {
+          allPassed = false;
+          break;
+        }
         const actual = mergedData[std.property_name];
-        if (actual === undefined || actual === null) continue;
+        // Jika target_value ada tapi actual null/undefined, gagal
+        if (
+          std.target_value !== undefined &&
+          std.target_value !== null &&
+          (actual === undefined || actual === null)
+        ) {
+          allPassed = false;
+          break;
+        }
         if (std.operator === "PLUS_MINUS") {
           if (
             actual < std.target_value - (std.tolerance || 0) ||

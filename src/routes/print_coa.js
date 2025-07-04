@@ -38,14 +38,14 @@ router.delete(
 );
 
 // Approve print COA
-router.patch(
+router.post(
   "/:id/approve",
   checkPermission("APPROVE_PRINT_COA"),
   printCoaController.approvePrintCoa
 );
 
 // Reject print COA
-router.patch(
+router.post(
   "/:id/reject",
   checkPermission("REJECT_PRINT_COA"),
   printCoaController.rejectPrintCoa

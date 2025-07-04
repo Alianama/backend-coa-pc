@@ -47,27 +47,27 @@ router.put(
 // PlanningDetail
 router.post(
   "/detail",
-  checkPermission("CREATE_PLANNING_HEADER"),
+  checkPermission("CREATE_PLANNING_DETAIL"),
   planningHeaderController.createDetail
 );
 router.get(
   "/detail/by-planning/:idPlanning",
-  checkPermission("READ_PLANNING_HEADER"),
+  checkPermission("READ_PLANNING_DETAIL"),
   planningHeaderController.getDetailsByPlanningId
 );
 router.get(
   "/detail/by-lot/:lotNumber",
-  checkPermission("READ_PLANNING_HEADER"),
+  checkPermission("READ_PLANNING_DETAIL"),
   planningHeaderController.getDetailsByLotNumber
 );
 router.put(
   "/detail/:id",
-  checkPermission("UPDATE_PLANNING_HEADER"),
+  checkPermission("UPDATE_PLANNING_DETAIL"),
   planningHeaderController.updateDetail
 );
 router.delete(
   "/detail/:id",
-  checkPermission("DELETE_PLANNING_HEADER"),
+  checkPermission("DELETE_PLANNING_DETAIL"),
   planningHeaderController.deleteDetail
 );
 

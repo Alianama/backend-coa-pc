@@ -135,7 +135,7 @@ module.exports = {
       });
       await createLog(
         "CREATE_CUSTOMER",
-        `Customer \"${name}\" berhasil dibuat`,
+        `Customer "${name}" berhasil dibuat`,
         null,
         req.user?.id
       );

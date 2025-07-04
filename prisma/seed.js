@@ -168,6 +168,31 @@ async function main() {
           description: "Dapat menghapus planning header",
         },
       }),
+      // Permission untuk planning_detail
+      prisma.permission.create({
+        data: {
+          name: "CREATE_PLANNING_DETAIL",
+          description: "Dapat membuat planning detail",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "READ_PLANNING_DETAIL",
+          description: "Dapat melihat planning detail",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "UPDATE_PLANNING_DETAIL",
+          description: "Dapat mengubah planning detail",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "DELETE_PLANNING_DETAIL",
+          description: "Dapat menghapus planning detail",
+        },
+      }),
     ]);
 
     // Buat roles
@@ -214,9 +239,11 @@ async function main() {
                 "PRINT_COA",
                 "READ_PRINT_COA",
                 "DELETE_PRINT_COA",
-                "CREATE_PLANNING_HEADER",
                 "READ_PLANNING_HEADER",
-                "DELETE_PLANNING_HEADER",
+                "CREATE_PLANNING_DETAIL",
+                "READ_PLANNING_DETAIL",
+                "UPDATE_PLANNING_DETAIL",
+                "DELETE_PLANNING_DETAIL",
               ].includes(p.name)
             )
             .map((permission) => ({
