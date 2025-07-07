@@ -219,7 +219,7 @@ const printCoaController = {
           <p><b>Customer:</b> ${planningHeader.customer.name}</p>
           <p><b>Product:</b> ${planningHeader.product.productName}</p>
           <p><b>Lot:</b> ${planningHeader.lotNumber}</p>
-          <a href="${APP_URL}/print/view${newPrintedCoa.id}" style="display:inline-block;padding:10px 20px;background:#1976d2;color:#fff;text-decoration:none;border-radius:5px;margin-top:10px;">Lihat Detail COA</a>
+          <a href="${APP_URL}/print/preview/${newPrintedCoa.id}" style="display:inline-block;padding:10px 20px;background:#1976d2;color:#fff;text-decoration:none;border-radius:5px;margin-top:10px;">Lihat Detail COA</a>
         `;
         sendMail(
           adminEmails.join(","),
@@ -377,14 +377,6 @@ const printCoaController = {
         return res.status(404).json({
           status: "error",
           message: "Data COA yang di-print tidak ditemukan",
-        });
-      }
-
-      // Cek status APPROVED
-      if (printedCoa.status !== "APPROVED") {
-        return res.status(400).json({
-          status: "error",
-          message: "Data COA belum di-approve",
         });
       }
 
@@ -560,7 +552,12 @@ const printCoaController = {
         expiryDate: printedCoa.expiryDate,
         analysisDate: printedCoa.analysisDate,
         issuedBy: issuedUser ? issuedUser.fullName : printedCoa.issueBy,
+        status: printedCoa.status,
+        createdAt: printedCoa.createdAt,
         approvedBy: approvedUser ? approvedUser.fullName : null,
+        resin: planningHeader.resin,
+        moulding: planningHeader.moulding,
+        letDownRatio: planningHeader.ratio,
       };
 
       res.json({
@@ -670,7 +667,7 @@ const printCoaController = {
               <li><b>Product:</b> ${updated.productName}</li>
               <li><b>Lot:</b> ${updated.lotNumber}</li>
             </ul>
-            <a href="${APP_URL}/print/view/${updated.id}" style="display:inline-block;padding:10px 20px;background:#388e3c;color:#fff;text-decoration:none;border-radius:5px;margin-top:10px;">Lihat Detail COA</a>
+            <a href="${APP_URL}/print/preview/${updated.id}" style="display:inline-block;padding:10px 20px;background:#388e3c;color:#fff;text-decoration:none;border-radius:5px;margin-top:10px;">Lihat Detail COA</a>
           `;
           sendMail(issuedUser.email, "COA Anda Telah Di-Approve", html).catch(
             console.error
@@ -742,7 +739,7 @@ const printCoaController = {
               <li><b>Product:</b> ${updated.productName}</li>
               <li><b>Lot:</b> ${updated.lotNumber}</li>
             </ul>
-            <a href="${APP_URL}/print/view/${updated.id}" style="display:inline-block;padding:10px 20px;background:#d32f2f;color:#fff;text-decoration:none;border-radius:5px;margin-top:10px;">Lihat Detail COA</a>
+            <a href="${APP_URL}/print/preview/${updated.id}" style="display:inline-block;padding:10px 20px;background:#d32f2f;color:#fff;text-decoration:none;border-radius:5px;margin-top:10px;">Lihat Detail COA</a>
           `;
           sendMail(issuedUser.email, "COA Anda Di-Reject", html).catch(
             console.error

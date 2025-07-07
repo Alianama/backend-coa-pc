@@ -10,6 +10,7 @@ const masterProductRoutes = require("./master_product");
 const printCoaRoutes = require("./print_coa");
 const planningHeaderRoutes = require("./planning.routes");
 const productStandardRoutes = require("./product_standard");
+const colorTrendRoutes = require("./color_trend");
 
 // Use routes
 router.use("/auth", authRoutes);
@@ -20,5 +21,6 @@ router.use("/product", masterProductRoutes);
 router.use("/print", printCoaRoutes);
 router.use("/planning", planningHeaderRoutes);
 router.use("/product-standard", productStandardRoutes);
+router.use("/trend", colorTrendRoutes);
 
 module.exports = router;
