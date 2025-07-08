@@ -453,17 +453,29 @@ const printCoaController = {
         let opD = stdD ? operatorMap[stdD.operator] || stdD.operator : "";
         let toleranceL =
           stdL && stdL.tolerance !== undefined && stdL.tolerance !== null
-            ? ` ${opL}${to2(stdL.tolerance)}${unitL}`
+            ? ` ${opL}${to2(stdL.tolerance)} ${unitL}`
             : "";
         let toleranceD =
           stdD && stdD.tolerance !== undefined && stdD.tolerance !== null
-            ? ` ${opD}${to2(stdD.tolerance)}${unitD}`
+            ? ` ${opD}${to2(stdD.tolerance)} ${unitD}`
             : "";
-        let stdStr = `${to2(stdL?.target_value)}${unitL} x ${to2(
-          stdD?.target_value
-        )}${unitD}${
+        // Tentukan unit yang akan ditampilkan di akhir (gunakan unit yang sama jika sama, atau gabungkan jika berbeda)
+        let finalUnit = "";
+        if (unitL === unitD && unitL) {
+          finalUnit = unitL;
+        } else if (unitL && unitD) {
+          finalUnit = `${unitL} x ${unitD}`;
+        } else if (unitL) {
+          finalUnit = unitL;
+        } else if (unitD) {
+          finalUnit = unitD;
+        }
+
+        let stdStr = `${to2(stdL?.target_value)} x ${to2(stdD?.target_value)}${
+          finalUnit ? " " + finalUnit : ""
+        }${
           toleranceL || toleranceD
-            ? " /" +
+            ? " / " +
               toleranceL +
               (toleranceL && toleranceD ? " & " : "") +
               toleranceD
@@ -476,11 +488,9 @@ const printCoaController = {
         let resD = printedCoa["pelletDiameter"];
         if (typeof resL === "number") resL = resL.toFixed(2);
         if (typeof resD === "number") resD = resD.toFixed(2);
-        if (unitL && resL !== undefined && resL !== null && resL !== "-")
-          resL = `${resL} ${unitL}`;
-        if (unitD && resD !== undefined && resD !== null && resD !== "-")
-          resD = `${resD} ${unitD}`;
-        resStr = `${resL || "-"} x ${resD || "-"}`;
+        resStr = `${resL || "-"} x ${resD || "-"}${
+          finalUnit ? " " + finalUnit : ""
+        }`;
         testItems.push({
           parameter: "Pellet Size L x D",
           standard: stdStr,
@@ -503,10 +513,10 @@ const printCoaController = {
             const op = operatorMap[std.operator] || std.operator;
             let toleranceStr =
               std.tolerance !== undefined && std.tolerance !== null
-                ? ` ${op}${to2(std.tolerance)}${unit}`
+                ? ` ${op}${to2(std.tolerance)} ${unit}`
                 : "";
             standard = `${to2(std.target_value)}${
-              unit ? " " + unit : ""
+              unit ? " " + unit : " "
             }${toleranceStr}`.trim();
           }
           let result = printedCoa[field];

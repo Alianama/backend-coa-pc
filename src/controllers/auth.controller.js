@@ -1,12 +1,6 @@
 const bcrypt = require("bcryptjs");
 const { PrismaClient } = require("@prisma/client");
-const {
-  generateTokens,
-  verifyRefreshToken,
-  getTokenPayload,
-} = require("../utils/jwt");
-const { ROLES } = require("../constants/roles");
-// const jwt = require("jsonwebtoken");
+const { generateTokens, verifyRefreshToken } = require("../utils/jwt");
 
 const prisma = new PrismaClient();
 
@@ -31,23 +25,28 @@ const authController = {
       });
 
       if (!user) {
-        return res
-          .status(401)
-          .json({ message: "Username atau password salah" });
+        return res.status(401).json({
+          status: "error",
+          message: "Username atau password salah",
+          data: null,
+        });
       }
 
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
-        return res
-          .status(401)
-          .json({ message: "Username atau password salah" });
+        return res.status(401).json({
+          status: "error",
+          message: "Username atau password salah",
+          data: null,
+        });
       }
 
       // Generate tokens pakai utils
       const { accessToken, refreshToken } = generateTokens(user);
 
       res.json({
-        message: "success",
+        status: "success",
+        message: "Login berhasil",
         data: {
           id: user.id,
           username: user.username,
@@ -59,7 +58,11 @@ const authController = {
         },
       });
     } catch (error) {
-      res.status(500).json({ message: "Terjadi kesalahan pada server" });
+      res.status(500).json({
+        status: "error",
+        message: "Terjadi kesalahan pada server",
+        data: null,
+      });
     }
   },
 
@@ -68,7 +71,11 @@ const authController = {
       const { refreshToken } = req.body;
 
       if (!refreshToken) {
-        return res.status(400).json({ message: "Refresh token diperlukan" });
+        return res.status(400).json({
+          status: "error",
+          message: "Refresh token diperlukan",
+          data: null,
+        });
       }
 
       let decoded;
@@ -76,12 +83,24 @@ const authController = {
         decoded = verifyRefreshToken(refreshToken);
       } catch (error) {
         if (error.name === "JsonWebTokenError") {
-          return res.status(401).json({ message: "Token tidak valid" });
+          return res.status(401).json({
+            status: "error",
+            message: "Token tidak valid",
+            data: null,
+          });
         }
         if (error.name === "TokenExpiredError") {
-          return res.status(401).json({ message: "Token sudah expired" });
+          return res.status(401).json({
+            status: "error",
+            message: "Token sudah expired",
+            data: null,
+          });
         }
-        return res.status(401).json({ message: "Refresh token tidak valid" });
+        return res.status(401).json({
+          status: "error",
+          message: "Refresh token tidak valid",
+          data: null,
+        });
       }
 
       const user = await prisma.user.findUnique({
@@ -89,7 +108,11 @@ const authController = {
       });
 
       if (!user || user.tokenVersion !== decoded.tokenVersion) {
-        return res.status(401).json({ message: "Refresh token tidak valid" });
+        return res.status(401).json({
+          status: "error",
+          message: "Refresh token tidak valid",
+          data: null,
+        });
       }
 
       // Generate access token baru
@@ -103,24 +126,41 @@ const authController = {
         },
       });
     } catch (error) {
-      res
-        .status(500)
-        .json({ message: "Terjadi kesalahan saat memperbarui token" });
+      res.status(500).json({
+        status: "error",
+        message: "Terjadi kesalahan saat memperbarui token",
+        data: null,
+      });
     }
   },
 
   async createUser(req, res) {
     try {
-      const { username, fullName, email, password, role } = req.body;
-      const adminRole = req.user.role;
+      let { username, fullName, email, password, roleId } = req.body;
 
-      // Hanya SUPER_ADMIN yang bisa membuat ADMIN
-      if (role === ROLES.ADMIN && adminRole !== ROLES.SUPER_ADMIN) {
-        return res
-          .status(403)
-          .json({ message: "Anda tidak memiliki akses untuk membuat admin" });
+      // Ubah roleId ke integer
+      roleId = parseInt(roleId);
+
+      // Validasi input
+      if (!username || !fullName || !email || !password || !roleId) {
+        return res.status(400).json({
+          status: "error",
+          message: "Semua field wajib diisi",
+          data: null,
+        });
       }
 
+      // Validasi email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          status: "error",
+          message: "Format email tidak valid",
+          data: null,
+        });
+      }
+
+      // Cek user sudah ada
       const existingUser = await prisma.user.findFirst({
         where: {
           OR: [{ username }, { email }],
@@ -128,36 +168,45 @@ const authController = {
       });
 
       if (existingUser) {
-        return res
-          .status(400)
-          .json({ message: "Username atau email sudah digunakan" });
+        return res.status(400).json({
+          status: "error",
+          message: "Username atau email sudah digunakan",
+          data: null,
+        });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      // Buat user baru dengan relasi role
       const user = await prisma.user.create({
         data: {
           username,
           fullName,
           email,
           password: hashedPassword,
-          role: role || ROLES.USER,
+          role: { connect: { id: roleId } },
           tokenVersion: 0,
+        },
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          email: true,
+          role: true,
         },
       });
 
       res.status(201).json({
+        status: "success",
         message: "User berhasil dibuat",
-        user: {
-          id: user.id,
-          username: user.username,
-          fullName: user.fullName,
-          email: user.email,
-          role: user.role,
-        },
+        data: user,
       });
     } catch (error) {
-      res.status(500).json({ message: "Terjadi kesalahan pada server" });
+      res.status(500).json({
+        status: "error",
+        message: "Terjadi kesalahan pada server",
+        data: null,
+      });
     }
   },
 
@@ -173,9 +222,17 @@ const authController = {
         },
       });
 
-      res.json({ message: "Logout berhasil" });
+      res.json({
+        status: "success",
+        message: "Logout berhasil",
+        data: null,
+      });
     } catch (error) {
-      res.status(500).json({ message: "Terjadi kesalahan pada server" });
+      res.status(500).json({
+        status: "error",
+        message: "Terjadi kesalahan pada server",
+        data: null,
+      });
     }
   },
 
@@ -198,8 +255,9 @@ const authController = {
 
       if (!user) {
         return res.status(404).json({
+          status: "error",
           message: "User tidak ditemukan",
-          error: "User tidak ditemukan dalam sistem",
+          data: null,
         });
       }
 
@@ -213,13 +271,15 @@ const authController = {
 
       res.json({
         status: "success",
+        message: "Profil berhasil diambil",
         data: transformedUser,
       });
     } catch (error) {
       console.error("Error getting own profile:", error);
       res.status(500).json({
+        status: "error",
         message: "Terjadi kesalahan saat mengambil profil",
-        error: error.message,
+        data: null,
       });
     }
   },
@@ -252,8 +312,9 @@ const authController = {
 
       if (!user) {
         return res.status(404).json({
+          status: "error",
           message: "User tidak ditemukan",
-          error: "User tidak ditemukan dalam sistem",
+          data: null,
         });
       }
 
@@ -267,13 +328,71 @@ const authController = {
 
       res.json({
         status: "success",
+        message: "Profil berhasil diambil",
         data: transformedUser,
       });
     } catch (error) {
       console.error("Error getting profile:", error);
       res.status(500).json({
+        status: "error",
         message: "Terjadi kesalahan saat mengambil profil",
-        error: error.message,
+        data: null,
+      });
+    }
+  },
+
+  async deleteUser(req, res) {
+    try {
+      const { id } = req.params;
+      if (req.user.id === parseInt(id)) {
+        return res.status(400).json({
+          status: "error",
+          message: "Tidak bisa menghapus user sendiri",
+          data: null,
+        });
+      }
+      await prisma.user.delete({ where: { id: parseInt(id) } });
+      res.json({
+        status: "success",
+        message: "User berhasil dihapus",
+        data: null,
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: "Gagal menghapus user",
+        data: null,
+      });
+    }
+  },
+
+  async changePassword(req, res) {
+    try {
+      const { oldPassword, newPassword } = req.body;
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+      const isValid = await bcrypt.compare(oldPassword, user.password);
+      if (!isValid) {
+        return res.status(400).json({
+          status: "error",
+          message: "Password lama salah",
+          data: null,
+        });
+      }
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { password: hashed, tokenVersion: { increment: 1 } },
+      });
+      res.json({
+        status: "success",
+        message: "Password berhasil diubah, silakan login kembali.",
+        data: null,
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: "Gagal mengubah password",
+        data: null,
       });
     }
   },

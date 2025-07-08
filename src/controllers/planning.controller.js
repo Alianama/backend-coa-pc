@@ -287,6 +287,8 @@ const planningHeaderController = {
         colorDeltaL,
         colorDeltaA,
         colorDeltaB,
+        visualCheck,
+        colorCheck,
       } = req.body;
       const tintDeltaE = hitungMagnitude(tintDeltaL, tintDeltaA, tintDeltaB);
       const colorDeltaE = hitungMagnitude(
@@ -353,6 +355,10 @@ const planningHeaderController = {
             break;
           }
         }
+      }
+      // Setelah loop, cek visual_check dan color_check
+      if (visualCheck !== "Ok" || colorCheck !== "Ok") {
+        allPassed = false;
       }
       if (allPassed) qcJudgment = "Passed";
 
@@ -722,6 +728,10 @@ const planningHeaderController = {
             break;
           }
         }
+      }
+      // Setelah loop, cek visual_check dan color_check
+      if (mergedData.visualCheck !== "Ok" || mergedData.colorCheck !== "Ok") {
+        allPassed = false;
       }
       if (allPassed) qcJudgment = "Passed";
       mergedData.qcJudgment = qcJudgment;
