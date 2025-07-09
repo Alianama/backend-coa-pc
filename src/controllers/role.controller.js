@@ -7,12 +7,10 @@ const roleController = {
     try {
       const roles = await prisma.role.findMany({
         where: { isDeleted: false },
-        include: {
-          permissions: {
-            include: {
-              permission: true,
-            },
-          },
+        select: {
+          id: true,
+          name: true,
+          description: true,
         },
       });
 

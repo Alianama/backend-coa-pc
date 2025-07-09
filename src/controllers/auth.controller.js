@@ -134,81 +134,7 @@ const authController = {
     }
   },
 
-  async createUser(req, res) {
-    try {
-      let { username, fullName, email, password, roleId } = req.body;
-
-      // Ubah roleId ke integer
-      roleId = parseInt(roleId);
-
-      // Validasi input
-      if (!username || !fullName || !email || !password || !roleId) {
-        return res.status(400).json({
-          status: "error",
-          message: "Semua field wajib diisi",
-          data: null,
-        });
-      }
-
-      // Validasi email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({
-          status: "error",
-          message: "Format email tidak valid",
-          data: null,
-        });
-      }
-
-      // Cek user sudah ada
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          OR: [{ username }, { email }],
-        },
-      });
-
-      if (existingUser) {
-        return res.status(400).json({
-          status: "error",
-          message: "Username atau email sudah digunakan",
-          data: null,
-        });
-      }
-
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Buat user baru dengan relasi role
-      const user = await prisma.user.create({
-        data: {
-          username,
-          fullName,
-          email,
-          password: hashedPassword,
-          role: { connect: { id: roleId } },
-          tokenVersion: 0,
-        },
-        select: {
-          id: true,
-          username: true,
-          fullName: true,
-          email: true,
-          role: true,
-        },
-      });
-
-      res.status(201).json({
-        status: "success",
-        message: "User berhasil dibuat",
-        data: user,
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: "error",
-        message: "Terjadi kesalahan pada server",
-        data: null,
-      });
-    }
-  },
+  // Hapus fungsi createUser dan deleteUser
 
   async logout(req, res) {
     try {
@@ -236,53 +162,7 @@ const authController = {
     }
   },
 
-  // Get own profile
-  async getOwnProfile(req, res) {
-    try {
-      // Ambil data user dari token yang sudah diverifikasi di middleware
-      const { id } = req.user;
-
-      const user = await prisma.user.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          username: true,
-          fullName: true,
-          email: true,
-          role: true,
-        },
-      });
-
-      if (!user) {
-        return res.status(404).json({
-          status: "error",
-          message: "User tidak ditemukan",
-          data: null,
-        });
-      }
-
-      // Transform dates to ISO string
-      const transformedUser = {
-        ...user,
-        createdAt: user.createdAt?.toISOString(),
-        updatedAt: user.updatedAt?.toISOString(),
-        lastLogin: user.lastLogin?.toISOString(),
-      };
-
-      res.json({
-        status: "success",
-        message: "Profil berhasil diambil",
-        data: transformedUser,
-      });
-    } catch (error) {
-      console.error("Error getting own profile:", error);
-      res.status(500).json({
-        status: "error",
-        message: "Terjadi kesalahan saat mengambil profil",
-        data: null,
-      });
-    }
-  },
+  // Hapus fungsi getOwnProfile
 
   async getProfile(req, res) {
     try {
@@ -336,31 +216,6 @@ const authController = {
       res.status(500).json({
         status: "error",
         message: "Terjadi kesalahan saat mengambil profil",
-        data: null,
-      });
-    }
-  },
-
-  async deleteUser(req, res) {
-    try {
-      const { id } = req.params;
-      if (req.user.id === parseInt(id)) {
-        return res.status(400).json({
-          status: "error",
-          message: "Tidak bisa menghapus user sendiri",
-          data: null,
-        });
-      }
-      await prisma.user.delete({ where: { id: parseInt(id) } });
-      res.json({
-        status: "success",
-        message: "User berhasil dihapus",
-        data: null,
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: "error",
-        message: "Gagal menghapus user",
         data: null,
       });
     }

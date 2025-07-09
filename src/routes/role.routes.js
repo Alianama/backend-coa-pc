@@ -12,6 +12,7 @@ router.get("/", checkPermission("MANAGE_ROLES"), roleController.getAll);
 router.post("/", checkPermission("MANAGE_ROLES"), roleController.create);
 router.put("/:id", checkPermission("MANAGE_ROLES"), roleController.update);
 router.delete("/:id", checkPermission("MANAGE_ROLES"), roleController.delete);
+router.get("/:id", checkPermission("MANAGE_ROLES"), roleController.getById);
 
 // Permission routes (memerlukan permission MANAGE_ROLES)
 router.get(
