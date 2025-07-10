@@ -291,7 +291,7 @@ const userController = {
       });
     } catch (error) {
       res.status(500).json({
-        status: "error",
+        status: error,
         message: "Terjadi kesalahan pada server",
         data: null,
       });
@@ -316,7 +316,7 @@ const userController = {
       });
     } catch (error) {
       res.status(500).json({
-        status: "error",
+        status: error,
         message: "Gagal menghapus user",
         data: null,
       });

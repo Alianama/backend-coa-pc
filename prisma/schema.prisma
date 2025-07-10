@@ -51,8 +51,7 @@ model print_coa {
   resin              String?
   pelletLength       Float?    @map("pellet_length")
   pelletDiameter     Float?    @map("pellet_diameter")
-  pelletVisual       String?   @map("pellet_visual")
-  dispersibility     Float?
+  dispersibility     String?
   mfr                Float?
   density            Float?
   moisture           Float?
@@ -79,14 +78,17 @@ model print_coa {
   printedBy          Int?      @map("printed_by")
   creator            user?     @relation("printedBy", fields: [printedBy], references: [id])
   caCO3              Float?    @map("ca_co3")
-  odor               Float?    @map("odor")
-  nucleatingAgent    Float?    @map("nucleating_agent")
-  hals               Float?    @map("hals")
-  hiding             Float?    @map("hiding")
+  odor               String?   @map("odor")
+  nucleatingAgent    String?   @map("nucleating_agent")
+  hals               String?   @map("hals")
+  hiding             String?   @map("hiding")
   isDeleted          Boolean   @default(false) @map("is_deleted")
   remarks            String?   @map("remarks")
   rejectedBy         Int?      @map("rejected_by")
   rejectedDate       DateTime? @map("rejected_date")
+  dispersion         String?
+  visualCheck        String?   @map("visual_check")
+  colorCheck         String?   @map("color_check")
 
   @@map("print_coa")
 }
@@ -150,7 +152,7 @@ model master_product {
 model product_standards {
   id            Int            @id @default(autoincrement())
   product_id    Int
-  property_name String         @unique
+  property_name String
   target_value  Float
   tolerance     Float?
   operator      Operator
@@ -158,6 +160,7 @@ model product_standards {
   isDeleted     Boolean        @default(false) @map("is_deleted")
   product       master_product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
+  @@unique([product_id, property_name])
   @@map("product_standards")
 }
 
@@ -313,7 +316,7 @@ model planning_detail {
   deltaP             Float?   @map("delta_p")
   density            Float?
   mfr                Float?
-  dispersibility     Float?
+  dispersibility     String?
   contamination      Float?
   macaroni           Float?
   pelletLength       Float?   @map("pellet_length")
@@ -333,16 +336,17 @@ model planning_detail {
   analysisDate       DateTime? @map("analysis_date")
   checkedBy          String?  @map("checked_by")
   caCO3              Float?   @map("ca_co3")
-  odor               Float?  @map("odor")
-  nucleatingAgent    Float?  @map("nucleating_agent")
-  hals               Float?  @map("hals")
-  hiding             Float?  @map("hiding")
+  odor               String?  @map("odor")
+  nucleatingAgent    String?  @map("nucleating_agent")
+  hals               String?  @map("hals")
+  hiding             String?  @map("hiding")
   remark             String?
   isDeleted          Boolean  @default(false) @map("is_deleted")
   planningHeader     planning_header @relation(fields: [idPlanning], references: [id])
   createdBy          Int      @map("created_by")
   createdAt          DateTime @default(now()) @map("created_at")
   creator            user     @relation(fields: [createdBy], references: [id])
+  dispersion         String?
 
   @@map("planning_details")
 }

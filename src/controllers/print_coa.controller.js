@@ -21,6 +21,11 @@ async function updateQuantityPrint(planningId) {
   });
 }
 
+// Tambahkan helper toCamelCase di atas sebelum digunakan
+function toCamelCase(str) {
+  return str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+}
+
 const printCoaController = {
   // Print COA dari Planning
   async print(req, res) {
@@ -132,8 +137,14 @@ const printCoaController = {
         "resin",
         "pelletLength",
         "pelletDiameter",
-        "pelletVisual",
         "dispersibility",
+        "dispersion",
+        "visualCheck",
+        "colorCheck",
+        "odor",
+        "nucleatingAgent",
+        "hiding",
+        "hals",
         "mfr",
         "density",
         "moisture",
@@ -159,14 +170,10 @@ const printCoaController = {
         "createdAt",
         "printedBy",
         "caCO3",
-        "odor",
-        "nucleatingAgent",
-        "hals",
-        "hiding",
-        "isDeleted",
         "remarks",
         "rejectedBy",
         "rejectedDate",
+        "isDeleted",
       ];
       // Ambil semua field dari planningDetail yang cocok dengan print_coa
       const allDetailFields = {};
@@ -388,6 +395,7 @@ const printCoaController = {
           product: true,
         },
       });
+
       if (!planningHeader) {
         return res.status(404).json({
           status: "error",
@@ -432,20 +440,36 @@ const printCoaController = {
 
       // 7. Bentuk testItems
       let testItems = [];
+      // Helper untuk cari standard dengan dua kemungkinan nama
+      function findStd(standards, key) {
+        return standards.find(
+          (s) => s.property_name === key || s.property_name === toCamelCase(key)
+        );
+      }
       // Cek jika pelletLength dan pelletDiameter ada di mandatory field
       const hasPelletLength = customerMandatoryFields.includes("pelletLength");
       const hasPelletDiameter =
         customerMandatoryFields.includes("pelletDiameter");
       let usedFields = [...customerMandatoryFields];
+      const stringFields = [
+        "odor",
+        "nucleatingAgent",
+        "dispersibility",
+        "visualCheck",
+        "colorCheck",
+        "hiding",
+        "hals",
+        "dispersion",
+      ];
       if (hasPelletLength && hasPelletDiameter) {
         // Gabungkan keduanya
         // Ambil standard dan unit
-        const stdL = productStandards.find(
-          (s) => s.property_name === "pelletLength"
-        );
-        const stdD = productStandards.find(
-          (s) => s.property_name === "pelletDiameter"
-        );
+        const stdL =
+          findStd(productStandards, "pelletLength") ||
+          findStd(productStandards, "pellet_length");
+        const stdD =
+          findStd(productStandards, "pelletDiameter") ||
+          findStd(productStandards, "pellet_diameter");
         const to2 = (v) => (typeof v === "number" ? v.toFixed(2) : v);
         let unitL = stdL && stdL.unit ? stdL.unit : "";
         let unitD = stdD && stdD.unit ? stdD.unit : "";
@@ -471,18 +495,23 @@ const printCoaController = {
           finalUnit = unitD;
         }
 
-        let stdStr = `${to2(stdL?.target_value)} x ${to2(stdD?.target_value)}${
-          finalUnit ? " " + finalUnit : ""
-        }${
-          toleranceL || toleranceD
-            ? " / " +
-              toleranceL +
-              (toleranceL && toleranceD ? " & " : "") +
-              toleranceD
-            : ""
-        }`
-          .replace(/\s+/g, " ")
-          .trim();
+        let stdStr;
+        if (stdL && stdD) {
+          stdStr = `${to2(stdL?.target_value)} x ${to2(stdD?.target_value)}${
+            finalUnit ? " " + finalUnit : ""
+          }${
+            toleranceL || toleranceD
+              ? " / " +
+                toleranceL +
+                (toleranceL && toleranceD ? " & " : "") +
+                toleranceD
+              : ""
+          }`
+            .replace(/\s+/g, " ")
+            .trim();
+        } else {
+          stdStr = "Same as STD";
+        }
         let resStr = "";
         let resL = printedCoa["pelletLength"];
         let resD = printedCoa["pelletDiameter"];
@@ -505,6 +534,21 @@ const printCoaController = {
       testItems = [
         ...testItems,
         ...usedFields.map((field) => {
+          if (stringFields.includes(field)) {
+            let result = printedCoa[field] ?? printedCoa[toCamelCase(field)];
+            if (result === undefined || result === null || result === "")
+              result = "-";
+            let paramLabel = field
+              .replace(/([A-Z])/g, " $1")
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (c) => c.toUpperCase())
+              .trim();
+            return {
+              parameter: paramLabel,
+              standard: "Same as STD",
+              result,
+            };
+          }
           const std = productStandards.find((s) => s.property_name === field);
           let standard = "-";
           let unit = std && std.unit ? std.unit : "";

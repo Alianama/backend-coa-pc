@@ -38,8 +38,13 @@ const planningHeaderController = {
       // Hitung expiryDate
       const mfgDate = new Date(data.mfgDate);
       const expiredAge = product.expiredAge || 0;
-      const expiryDate = new Date(
+      // Hitung expiryDate dikurang 1 hari
+      const expiryDateRaw = new Date(
         mfgDate.setMonth(mfgDate.getMonth() + expiredAge)
+      );
+      // Kurangi 1 hari (24 jam)
+      const expiryDate = new Date(
+        expiryDateRaw.getTime() - 24 * 60 * 60 * 1000
       );
 
       // Validasi lotNumber unik
@@ -365,7 +370,6 @@ const planningHeaderController = {
       // Bersihkan data sebelum create - ubah string kosong menjadi null dan string angka menjadi number untuk field Float
       const cleanData = { ...req.body };
       const floatFields = [
-        "dispersibility",
         "contamination",
         "macaroni",
         "pelletLength",
@@ -610,7 +614,6 @@ const planningHeaderController = {
 
       // Bersihkan data sebelum update - ubah string kosong menjadi null dan string angka menjadi number untuk field Float
       const floatFields = [
-        "dispersibility",
         "contamination",
         "macaroni",
         "pelletLength",
@@ -634,10 +637,6 @@ const planningHeaderController = {
         "density",
         "mfr",
         "caCO3",
-        "odor",
-        "nucleatingAgent",
-        "hals",
-        "hiding",
       ];
 
       floatFields.forEach((field) => {
@@ -730,7 +729,10 @@ const planningHeaderController = {
         }
       }
       // Setelah loop, cek visual_check dan color_check
-      if (mergedData.visualCheck !== "Ok" || mergedData.colorCheck !== "Ok") {
+      if (
+        mergedData.visualCheck !== "Pass" ||
+        mergedData.colorCheck !== "Pass"
+      ) {
         allPassed = false;
       }
       if (allPassed) qcJudgment = "Passed";
@@ -878,7 +880,7 @@ const planningHeaderController = {
         where: { id: parseInt(id) },
         include: {
           planningDetails: {
-            take: 1, // Cukup ambil 1 untuk cek
+            take: 1,
           },
         },
       });

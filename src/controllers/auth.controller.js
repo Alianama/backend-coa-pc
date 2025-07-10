@@ -61,7 +61,7 @@ const authController = {
       res.status(500).json({
         status: "error",
         message: "Terjadi kesalahan pada server",
-        data: null,
+        data: error,
       });
     }
   },
@@ -129,7 +129,7 @@ const authController = {
       res.status(500).json({
         status: "error",
         message: "Terjadi kesalahan saat memperbarui token",
-        data: null,
+        data: error,
       });
     }
   },
@@ -157,7 +157,7 @@ const authController = {
       res.status(500).json({
         status: "error",
         message: "Terjadi kesalahan pada server",
-        data: null,
+        data: error,
       });
     }
   },
@@ -247,7 +247,7 @@ const authController = {
       res.status(500).json({
         status: "error",
         message: "Gagal mengubah password",
-        data: null,
+        data: error,
       });
     }
   },

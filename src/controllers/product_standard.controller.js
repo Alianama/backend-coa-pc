@@ -99,6 +99,18 @@ const createProductStandard = async (req, res) => {
         });
       }
     }
+    // Validasi tidak ada property_name yang sama untuk product_id yang sama
+    const keySet = new Set();
+    for (const item of input) {
+      const key = `${item.product_id}_${item.property_name}`;
+      if (keySet.has(key)) {
+        return res.status(400).json({
+          status: "error",
+          message: `Terdapat property_name '${item.property_name}' yang duplikat untuk product_id ${item.product_id}.`,
+        });
+      }
+      keySet.add(key);
+    }
     const data = await prisma.product_standards.createMany({ data: input });
     // Update status product terkait
     if (input[0] && input[0].product_id) {
