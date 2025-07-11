@@ -11,6 +11,7 @@ const printCoaRoutes = require("./print_coa");
 const planningHeaderRoutes = require("./planning.routes");
 const productStandardRoutes = require("./product_standard");
 const colorTrendRoutes = require("./color_trend");
+const dashboardRoutes = require("./dashboard.routes");
 
 // Use routes
 router.use("/auth", authRoutes);
@@ -22,5 +23,6 @@ router.use("/print", printCoaRoutes);
 router.use("/planning", planningHeaderRoutes);
 router.use("/product-standard", productStandardRoutes);
 router.use("/trend", colorTrendRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 module.exports = router;

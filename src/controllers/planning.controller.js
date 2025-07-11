@@ -194,11 +194,62 @@ const planningHeaderController = {
     try {
       const { id } = req.params;
       const data = req.body;
+
+      // Jika ada perubahan idProduct atau mfgDate, hitung ulang expiryDate
+      if (data.idProduct || data.mfgDate) {
+        // Ambil data planning yang ada untuk mendapatkan nilai yang tidak diupdate
+        const existingPlanning = await prisma.planning_header.findUnique({
+          where: { id: parseInt(id) },
+        });
+
+        if (!existingPlanning) {
+          return res.status(404).json({
+            status: "error",
+            message: "Planning tidak ditemukan",
+          });
+        }
+
+        // Gunakan idProduct yang diupdate atau yang sudah ada
+        const productId = data.idProduct || existingPlanning.idProduct;
+
+        // Ambil expiredAge dari product
+        const product = await prisma.master_product.findUnique({
+          where: { id: productId },
+          select: { expiredAge: true },
+        });
+
+        if (!product) {
+          return res.status(400).json({
+            status: "error",
+            message: "Produk tidak ditemukan!",
+          });
+        }
+
+        // Gunakan mfgDate yang diupdate atau yang sudah ada
+        const mfgDate = data.mfgDate || existingPlanning.mfgDate;
+
+        // Hitung expiryDate
+        const mfgDateObj = new Date(mfgDate);
+        const expiredAge = product.expiredAge || 0;
+        // Hitung expiryDate dikurang 1 hari
+        const expiryDateRaw = new Date(
+          mfgDateObj.setMonth(mfgDateObj.getMonth() + expiredAge)
+        );
+        // Kurangi 1 hari (24 jam)
+        const expiryDate = new Date(
+          expiryDateRaw.getTime() - 24 * 60 * 60 * 1000
+        );
+
+        // Tambahkan expiryDate ke data yang akan diupdate
+        data.expiryDate = expiryDate;
+      }
+
       const planning = await prisma.planning_header.update({
         where: { id: parseInt(id) },
         data,
         include: { creator: { select: { fullName: true } } },
       });
+
       res.json({
         status: "success",
         message: "Planning berhasil diperbarui",
@@ -294,6 +345,7 @@ const planningHeaderController = {
         colorDeltaB,
         visualCheck,
         colorCheck,
+        odor,
       } = req.body;
       const tintDeltaE = hitungMagnitude(tintDeltaL, tintDeltaA, tintDeltaB);
       const colorDeltaE = hitungMagnitude(
@@ -362,7 +414,7 @@ const planningHeaderController = {
         }
       }
       // Setelah loop, cek visual_check dan color_check
-      if (visualCheck !== "Ok" || colorCheck !== "Ok") {
+      if (visualCheck !== "Pass" || colorCheck !== "Pass" || odor !== "Pass") {
         allPassed = false;
       }
       if (allPassed) qcJudgment = "Passed";

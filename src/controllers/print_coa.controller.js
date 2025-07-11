@@ -200,6 +200,7 @@ const printCoaController = {
         issueBy: currentUser.username,
         status: "REQUESTED",
         remarks: remarks,
+        shippedToCustomerId: req.body.shippedToCustomerId || null,
         ...allDetailFields,
       };
 
@@ -298,6 +299,7 @@ const printCoaController = {
             status: true,
             printedDate: true,
             remarks: true,
+            shippedToCustomerId: true,
           },
         }),
         prisma.print_coa.count({ where }),
@@ -324,6 +326,14 @@ const printCoaController = {
             .map((item) => item.rejectedBy)
         ),
       ];
+      // Kumpulkan semua shippedToCustomerId unik
+      const shippedToCustomerIds = [
+        ...new Set(
+          printedCoas
+            .filter((item) => item.shippedToCustomerId)
+            .map((item) => item.shippedToCustomerId)
+        ),
+      ];
 
       // Merge all user IDs to fetch
       const allUserIds = [...new Set([...approvedByIds, ...rejectedByIds])];
@@ -340,6 +350,19 @@ const printCoaController = {
         }, {});
       }
 
+      // Ambil nama customer tujuan pengiriman
+      let shippedToCustomerMap = {};
+      if (shippedToCustomerIds.length > 0) {
+        const customers = await prisma.master_customer.findMany({
+          where: { id: { in: shippedToCustomerIds } },
+          select: { id: true, name: true },
+        });
+        shippedToCustomerMap = customers.reduce((acc, c) => {
+          acc[c.id] = c.name;
+          return acc;
+        }, {});
+      }
+
       const data = printedCoas.map((item) => ({
         ...item,
         approvedByName: item.approvedBy
@@ -347,6 +370,9 @@ const printCoaController = {
           : null,
         rejectedByName: item.rejectedBy
           ? userMap[item.rejectedBy] || null
+          : null,
+        shippedToCustomerName: item.shippedToCustomerId
+          ? shippedToCustomerMap[item.shippedToCustomerId] || null
           : null,
       }));
 
@@ -404,9 +430,27 @@ const printCoaController = {
       }
 
       // 3. Ambil mandatory fields dari customer
-      const customerMandatoryFields = Object.entries(planningHeader.customer)
-        .filter(([key, value]) => value === true)
-        .map(([key]) => key);
+      let customerMandatoryFields = [];
+      let customerName = "";
+      if (printedCoa.shippedToCustomerId) {
+        // Jika ada shippedToCustomerId, ambil dari customer tujuan
+        const shippedToCustomer = await prisma.master_customer.findUnique({
+          where: { id: printedCoa.shippedToCustomerId },
+        });
+        if (shippedToCustomer) {
+          customerMandatoryFields = Object.entries(shippedToCustomer)
+            .filter(([, value]) => value === true)
+            .map(([key]) => key);
+          customerName = shippedToCustomer.name;
+        }
+      }
+      if (!customerMandatoryFields.length) {
+        // fallback ke planning header
+        customerMandatoryFields = Object.entries(planningHeader.customer)
+          .filter(([, value]) => value === true)
+          .map(([key]) => key);
+        customerName = planningHeader.customer.name;
+      }
 
       // 4. Ambil standard product
       const productStandards = await prisma.product_standards.findMany({
@@ -596,7 +640,7 @@ const printCoaController = {
 
       // 8. Format response
       const response = {
-        costumerName: printedCoa.costumerName,
+        costumerName: customerName,
         productName: printedCoa.productName,
         remarks: printedCoa.remarks,
         testItems,
@@ -612,6 +656,7 @@ const printCoaController = {
         resin: planningHeader.resin,
         moulding: planningHeader.moulding,
         letDownRatio: planningHeader.ratio,
+        shippedToCustomerId: printedCoa.shippedToCustomerId,
       };
 
       res.json({

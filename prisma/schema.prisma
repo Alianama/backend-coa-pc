@@ -7,6 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PassNG {
+  Pass
+  NG
+}
+
+enum StandardProperty {
+  colorDeltaL
+  colorDeltaA
+  colorDeltaB
+  colorDeltaE
+  tintDeltaL
+  tintDeltaA
+  tintDeltaB
+  tintDeltaE
+  deltaP
+  density
+  mfr
+  dispersibility
+  contamination
+  macaroni
+  pelletLength
+  pelletDiameter
+  visualCheck
+  moisture
+  carbonContent
+  foreignMatter
+  weightOfChips
+  intrinsicViscosity
+  ashContent
+  heatStability
+  lightFastness
+  granule
+  caCO3
+  hals
+  hiding
+  odor
+  nucleatingAgent
+}
+
 model user {
   id                  Int            @id @default(autoincrement())
   fullName            String         @map("full_name")
@@ -78,7 +117,7 @@ model print_coa {
   printedBy          Int?      @map("printed_by")
   creator            user?     @relation("printedBy", fields: [printedBy], references: [id])
   caCO3              Float?    @map("ca_co3")
-  odor               String?   @map("odor")
+  odor               PassNG?   @map("odor")
   nucleatingAgent    String?   @map("nucleating_agent")
   hals               String?   @map("hals")
   hiding             String?   @map("hiding")
@@ -87,8 +126,9 @@ model print_coa {
   rejectedBy         Int?      @map("rejected_by")
   rejectedDate       DateTime? @map("rejected_date")
   dispersion         String?
-  visualCheck        String?   @map("visual_check")
-  colorCheck         String?   @map("color_check")
+  visualCheck        PassNG?   @map("visual_check")
+  colorCheck         PassNG?   @map("color_check")
+  shippedToCustomerId Int?     @map("shipped_to_customer_id") // customer tujuan pengiriman (opsional)
 
   @@map("print_coa")
 }
@@ -152,7 +192,7 @@ model master_product {
 model product_standards {
   id            Int            @id @default(autoincrement())
   product_id    Int
-  property_name String
+  property_name StandardProperty
   target_value  Float
   tolerance     Float?
   operator      Operator
@@ -321,8 +361,8 @@ model planning_detail {
   macaroni           Float?
   pelletLength       Float?   @map("pellet_length")
   pelletDiameter     Float?   @map("pellet_diameter")
-  visualCheck        String?  @map("visual_check")
-  colorCheck         String?  @map("color_check")
+  visualCheck        PassNG?  @map("visual_check")
+  colorCheck         PassNG?  @map("color_check")
   moisture           Float?
   carbonContent      Float?   @map("carbon_content")
   foreignMatter      Float?   @map("foreign_matter")
@@ -336,7 +376,7 @@ model planning_detail {
   analysisDate       DateTime? @map("analysis_date")
   checkedBy          String?  @map("checked_by")
   caCO3              Float?   @map("ca_co3")
-  odor               String?  @map("odor")
+  odor               PassNG?  @map("odor")
   nucleatingAgent    String?  @map("nucleating_agent")
   hals               String?  @map("hals")
   hiding             String?  @map("hiding")
@@ -350,5 +390,4 @@ model planning_detail {
 
   @@map("planning_details")
 }
-
 

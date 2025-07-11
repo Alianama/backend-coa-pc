@@ -1,0 +1,596 @@
+﻿product_name;property_name;target_value;tolerance;operator;unit
+TET 1JA088 WHT;Color Delta E;1;0;<;
+;MFR;5;2;±;g/10min
+;Delta P;10;10;≤;Mpa
+;Ash Content;70;2;±;%
+;Moisture;2000;2000;<;ppm
+;Density;2,000;0,1;±;g/cm³
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+FEM 0CA041 BLK-PTI;Color Delta E;1;0;<;
+;Tint Delta E;1;0;<;
+;MFR;11;3;±;g/10min
+;Density;1,15;0,02;±;g/cm³
+;Moisture;2000;0;<;ppm
+;Carbon Content;40;2;±;%
+;Dispersion;50;0;<;µm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM-HB 3CA021 ORG-3255;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TSM 7JA397 ENB9;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TSM-HB 0CA073 EBCK-495F-PTI;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TSM 0JA216 BLK;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM-HB 9CA079 GRY-1735;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM-HB 9CA089 GRY-1925;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TBM-HB 9CA065 GRY-1735;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TBM-HB 9CA080 GRY-1986;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TSM-HB 0CA099 EBCK-PTI;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 0JA162 BLK BNY-202B;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 0JA127 BLK NH-900L;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 0JA128 BLK NH-167L;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 9JA181 GRY-PK81;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 4JA283 PNK;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 7JA277 BLU;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 9JA050 L GRY-BI961-kai;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 9JA175 GRY-598;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TBP 4JA111 PNK-A;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TBP 4JA144 PNK-B;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TSM 4JA313 PNK;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TSM 1JA209 WHT;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TBP 7JA124 BLU;Color Delta E;2;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TSM 9JA160 GRY;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PEM 3JA145 ORG;Color Delta E;2;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TBP 4JA067 PNK-A;Color Delta E;2;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TBP 7JA127 BLU;Color Delta E;2;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TBP 8JA028 VLT;Color Delta E;2;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TBM 0JA363 BLK;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 9JA224 GRY-4.5;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 1JA217 WHT;Color Delta E;1;0;<;
+;MFR;5;2;±;g/10min
+;Delta P;10;10;≤;Mpa
+;Ash Content;70;2;±;%
+;Moisture;2000;2000;<;ppm
+;Density;2,000;0,1;±;g/cm³
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TSM 0JA345 BLK;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+CLEANING MT;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 1JA134 WHT;Color Delta E;1;0;<;
+;MFR;5;2;±;g/10min
+;Ash Content;70;2;±;%
+;Moisture;2000;2000;<;ppm
+;Density;2,000;0,1;±;g/cm³
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 1JA239 E WHT;Color Delta E;1;0;<;
+;MFR;33;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Density;1,500;0,2;±;g/cm³
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 1JA309 WHT;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 1JA135 E PAL;Color Delta E;1;0;<;
+;MFR;91;20;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Density;1,100;0,1;±;g/cm³
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+PEM 1JA335 PAL;Color Delta E;2;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;2;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+PEM 1JA329 WHT;Color Delta E;2;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;2;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 1JA016 NAT;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;0;;visual
+;Color ;Same as Std;0;;visual
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 4JA381 S P-PNK-A;Color Delta E;1;0;<;
+;MFR;28;7;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 4JA414 PNK-B;Color Delta E;1;0;<;
+;MFR;40;20;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 4JA435 PNK;Color Delta E;1;0;<;
+;MFR;50;20;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 2JA181 YEL;Color Delta E;1;0;<;
+;MFR;30;20;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 2JA211 YEL;Color Delta E;1;0;<;
+;MFR;27;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 2JA404 YEL-A-FID24;Color Delta E;1;0;<;
+;MFR;26;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 5YC273 GRN-PTI;Color Delta E;1;0;<;
+;MFR;35;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 5JA267 S P-GRN;Color Delta E;1;0;<;
+;MFR;30;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 5JA366 S P-GRN-A;Color Delta E;1;0;<;
+;MFR;35;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 5JA423 GRN-A;Color Delta E;1;0;<;
+;MFR;35;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 7JA525 BLU-C-FID24;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 7JA528 BLU-A-FIS18;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 8JA073 S P-VLT;Color Delta E;1;0;<;
+;MFR;23;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TET 8JA150 VLT-A-FID24;Color Delta E;1;0;<;
+;MFR;25;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+TBM 1JA167 WHT;Color Delta E;1;0;<;
+;MFR;75;20;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 1JA166 EZ WHT;Color Delta E;1;0;<;
+;MFR;40;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 1JA172 EZ WHT;Color Delta E;1;0;<;
+;MFR;30;10;±;g/10min
+;Moisture;2000;2000;<;ppm
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+PEM 1KT431 Z-WHT-PTI;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;2;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;
+;;;;;
+PPM 1YE451 Z-WHT-PTI;Color Delta E;1;0;<;
+;Contamination;5;0;≤;point
+;Macaroni;2;0;≤;pcs
+;Pellet Length;3;0,5;±;mm
+;Pellet Diameter;3;0,5;±;mm
+;Pellet Visual;Same as Std;;;
+;Color ;Same as Std;;;
+;Dispersibility;Same as Std;;;

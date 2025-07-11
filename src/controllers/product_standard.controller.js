@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-// Daftar field valid dari PlanningDetail
+// Daftar field valid dari enum StandardProperty di schema Prisma
 const VALID_FIELDS = [
   "colorDeltaL",
   "colorDeltaA",
