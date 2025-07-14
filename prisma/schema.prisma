@@ -67,6 +67,7 @@ model user {
   products            master_product[]
   planningHeaders     planning_header[]
   planningDetails     planning_detail[]
+  reportLogs          report_log[]
 
   @@map("users")
 }
@@ -388,5 +389,18 @@ model planning_detail {
   dispersion         String?
 
   @@map("planning_details")
+}
+
+model report_log {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  username   String
+  fileName   String
+  filePath   String
+  startDate  DateTime
+  endDate    DateTime
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       user     @relation(fields: [userId], references: [id])
+  @@map("report_logs")
 }
 

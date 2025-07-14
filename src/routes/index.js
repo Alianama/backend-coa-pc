@@ -12,6 +12,7 @@ const planningHeaderRoutes = require("./planning.routes");
 const productStandardRoutes = require("./product_standard");
 const colorTrendRoutes = require("./color_trend");
 const dashboardRoutes = require("./dashboard.routes");
+const reportRoutes = require("./report.routes");
 
 // Use routes
 router.use("/auth", authRoutes);
@@ -24,5 +25,6 @@ router.use("/planning", planningHeaderRoutes);
 router.use("/product-standard", productStandardRoutes);
 router.use("/trend", colorTrendRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/report", reportRoutes);
 
 module.exports = router;

@@ -6,8 +6,13 @@ const prisma = new PrismaClient();
 
 async function main() {
   try {
-    // Hapus data dari tabel yang punya foreign key ke role dulu
-    await prisma.user.deleteMany();
+    // Hapus data dari tabel yang punya foreign key ke user dulu
+    await prisma.report_log.deleteMany({});
+    await prisma.log.deleteMany({});
+    await prisma.planning_detail.deleteMany({});
+    await prisma.planning_header.deleteMany({});
+    await prisma.master_product.deleteMany({});
+    await prisma.user.deleteMany({});
     await prisma.role_permission.deleteMany();
     await prisma.permission.deleteMany();
     await prisma.role.deleteMany();
@@ -191,6 +196,12 @@ async function main() {
         data: {
           name: "DELETE_PLANNING_DETAIL",
           description: "Dapat menghapus planning detail",
+        },
+      }),
+      prisma.permission.create({
+        data: {
+          name: "READ_REPORT",
+          description: "Dapat read report",
         },
       }),
     ]);
