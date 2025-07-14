@@ -1,24 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
+const { logCreate, logUpdate, logDelete } = require("../utils/logger");
 const prisma = new PrismaClient();
-
-async function createLog(action, description, userId) {
-  try {
-    const logData = {
-      action,
-      description,
-      userId,
-    };
-
-    const log = await prisma.log.create({
-      data: logData,
-    });
-    console.log(`Log created: ${action} - ${description}`);
-    return log;
-  } catch (error) {
-    console.error("Error creating log:", error);
-    return null;
-  }
-}
 
 // Get all products
 const getAllProducts = async (req, res) => {
@@ -86,12 +68,6 @@ const getProductById = async (req, res) => {
       });
     }
 
-    await createLog(
-      "GET_PRODUCT_BY_ID",
-      `Berhasil mengambil data produk dengan ID ${productId}`,
-      req.user?.id
-    );
-
     res.status(200).json({
       status: "success",
       message: "Produk berhasil ditemukan",
@@ -125,10 +101,14 @@ const createProduct = async (req, res) => {
       },
     });
 
-    await createLog(
-      "CREATE_PRODUCT",
-      `Produk "${product.productName}" berhasil dibuat`,
-      req.user?.id
+    // Log aktivitas create
+    await logCreate(
+      "master_products",
+      req.user.id,
+      req.user.username,
+      product.id,
+      productData,
+      `Produk baru dibuat: ${product.productName}`
     );
 
     res.status(201).json({
@@ -185,10 +165,15 @@ const updateProduct = async (req, res) => {
       },
     });
 
-    await createLog(
-      "UPDATE_PRODUCT",
-      `Produk "${product.productName}" dengan ID ${productId} berhasil diupdate`,
-      req.user?.id
+    // Log aktivitas update
+    await logUpdate(
+      "master_products",
+      req.user.id,
+      req.user.username,
+      productId,
+      existingProduct,
+      productData,
+      `Produk diupdate: ${product.productName}`
     );
 
     res.status(200).json({
@@ -237,10 +222,14 @@ const deleteProduct = async (req, res) => {
       data: { isDeleted: true },
     });
 
-    await createLog(
-      "DELETE_PRODUCT",
-      `Produk "${deletedProduct.productName}" dengan ID ${id} berhasil dihapus (soft delete)`,
-      req.user?.id
+    // Log aktivitas delete
+    await logDelete(
+      "master_products",
+      req.user.id,
+      req.user.username,
+      productId,
+      existingProduct,
+      `Produk dihapus: ${deletedProduct.productName}`
     );
 
     res.status(200).json({

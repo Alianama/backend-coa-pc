@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { logCreate, logUpdate, logDelete } = require("../utils/logger");
 const prisma = new PrismaClient();
 const { sendMail } = require("../utils/email");
 
@@ -208,6 +209,26 @@ const printCoaController = {
       const newPrintedCoa = await prisma.print_coa.create({
         data: printData,
       });
+
+      // Log aktivitas create print COA
+      try {
+        if (req.user && req.user.id) {
+          await logCreate(
+            "print_coa",
+            req.user.id,
+            req.user.username,
+            newPrintedCoa.id,
+            printData,
+            `Print COA baru dibuat: ${planningHeader.lotNumber}`
+          );
+          console.log("Log berhasil dibuat untuk print COA:", newPrintedCoa.id);
+        } else {
+          console.warn("User ID tidak tersedia untuk logging");
+        }
+      } catch (logError) {
+        console.error("Error saat membuat log:", logError);
+        // Jangan throw error agar tidak mengganggu operasi utama
+      }
 
       // Kirim email ke semua user role ADMIN
       const adminUsers = await prisma.user.findMany({
@@ -681,7 +702,14 @@ const printCoaController = {
       // Ambil data print COA sebelum dihapus untuk mendapatkan planningId
       const printedCoa = await prisma.print_coa.findUnique({
         where: { id: parseInt(id) },
-        select: { planningId: true, status: true, isDeleted: true },
+        select: {
+          planningId: true,
+          status: true,
+          isDeleted: true,
+          lotNumber: true,
+          costumerName: true,
+          productName: true,
+        },
       });
       if (!printedCoa || printedCoa.isDeleted) {
         return res.status(404).json({
@@ -701,6 +729,27 @@ const printCoaController = {
         where: { id: parseInt(id) },
         data: { isDeleted: true },
       });
+
+      // Log aktivitas delete
+      try {
+        if (req.user && req.user.id) {
+          await logDelete(
+            "print_coa",
+            req.user.id,
+            req.user.username,
+            parseInt(id),
+            printedCoa,
+            `Print COA dihapus: ${printedCoa.lotNumber}`
+          );
+          console.log("Log berhasil dibuat untuk delete COA:", parseInt(id));
+        } else {
+          console.warn("User ID tidak tersedia untuk logging delete");
+        }
+      } catch (logError) {
+        console.error("Error saat membuat log delete:", logError);
+        // Jangan throw error agar tidak mengganggu operasi utama
+      }
+
       // Update quantityPrint di planning_header
       await updateQuantityPrint(printedCoa.planningId);
       res.json({
@@ -742,6 +791,11 @@ const printCoaController = {
         });
       }
 
+      // Get existing data for logging
+      const existingCoa = await prisma.print_coa.findUnique({
+        where: { id: parseInt(id) },
+      });
+
       const updated = await prisma.print_coa.update({
         where: { id: parseInt(id) },
         data: {
@@ -750,6 +804,31 @@ const printCoaController = {
           approvedDate: new Date(),
         },
       });
+
+      // Log aktivitas approve
+      try {
+        if (req.user && req.user.id) {
+          await logUpdate(
+            "print_coa",
+            req.user.id,
+            req.user.username,
+            parseInt(id),
+            existingCoa,
+            {
+              status: "APPROVED",
+              approvedBy: req.user.id,
+              approvedDate: new Date(),
+            },
+            `Print COA diapprove: ${updated.lotNumber}`
+          );
+          console.log("Log berhasil dibuat untuk approve COA:", parseInt(id));
+        } else {
+          console.warn("User ID tidak tersedia untuk logging approve");
+        }
+      } catch (logError) {
+        console.error("Error saat membuat log approve:", logError);
+        // Jangan throw error agar tidak mengganggu operasi utama
+      }
 
       // Kirim email ke user issuedBy
       if (updated.issueBy) {
@@ -814,6 +893,11 @@ const printCoaController = {
         });
       }
 
+      // Get existing data for logging
+      const existingCoa = await prisma.print_coa.findUnique({
+        where: { id: parseInt(id) },
+      });
+
       const updated = await prisma.print_coa.update({
         where: { id: parseInt(id) },
         data: {
@@ -822,6 +906,31 @@ const printCoaController = {
           rejectedDate: new Date(),
         },
       });
+
+      // Log aktivitas reject
+      try {
+        if (req.user && req.user.id) {
+          await logUpdate(
+            "print_coa",
+            req.user.id,
+            req.user.username,
+            parseInt(id),
+            existingCoa,
+            {
+              status: "REJECTED",
+              rejectedBy: req.user.id,
+              rejectedDate: new Date(),
+            },
+            `Print COA direject: ${updated.lotNumber}`
+          );
+          console.log("Log berhasil dibuat untuk reject COA:", parseInt(id));
+        } else {
+          console.warn("User ID tidak tersedia untuk logging reject");
+        }
+      } catch (logError) {
+        console.error("Error saat membuat log reject:", logError);
+        // Jangan throw error agar tidak mengganggu operasi utama
+      }
 
       // Kirim email ke user issuedBy
       if (updated.issueBy) {

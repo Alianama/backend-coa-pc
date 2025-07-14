@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { logCreate, logUpdate, logDelete } = require("../utils/logger");
 const prisma = new PrismaClient();
 
 // Daftar kolom yang valid dari master_coa
@@ -69,32 +70,6 @@ function mapMandatoryFieldsToDb(mandatoryFields = {}) {
   return mapped;
 }
 
-async function createLog(action, description, coaId, userId) {
-  try {
-    // Jika coaId adalah null atau undefined, kita tidak perlu menyertakannya
-    const logData = {
-      action,
-      description,
-      userId,
-    };
-
-    // Hanya tambahkan coaId jika ada dan valid
-    if (coaId) {
-      logData.coaId = coaId;
-    }
-
-    const log = await prisma.log.create({
-      data: logData,
-    });
-    console.log(`Log created: ${action} - ${description}`);
-    return log;
-  } catch (error) {
-    console.error("Error creating log:", error);
-    // Jangan throw error, hanya log saja
-    return null;
-  }
-}
-
 module.exports = {
   createCustomer: async (req, res) => {
     const { name, mandatoryFields } = req.body;
@@ -133,11 +108,15 @@ module.exports = {
           ...mandatoryDbFields,
         },
       });
-      await createLog(
-        "CREATE_CUSTOMER",
-        `Customer "${name}" berhasil dibuat`,
-        null,
-        req.user?.id
+
+      // Log aktivitas create
+      await logCreate(
+        "master_customers",
+        req.user.id,
+        req.user.username,
+        customer.id,
+        { name, mandatoryFields },
+        `Customer baru dibuat: ${name}`
       );
       res.status(201).json({
         status: "success",
@@ -164,12 +143,7 @@ module.exports = {
       const customers = await prisma.master_customer.findMany({
         where: { isDeleted: false },
       });
-      await createLog(
-        "GET_ALL_CUSTOMERS",
-        `Berhasil mengambil ${customers.length} data customer`,
-        null,
-        req.user?.id
-      );
+
       res.status(200).json({
         status: "success",
         message: "Data customer berhasil diambil",
@@ -203,12 +177,7 @@ module.exports = {
           message: "Customer not found",
         });
       }
-      await createLog(
-        "GET_CUSTOMER_BY_ID",
-        `Berhasil mengambil data customer dengan ID ${customerId}`,
-        null,
-        req.user?.id
-      );
+
       res.status(200).json({
         status: "success",
         message: "Customer berhasil ditemukan",
@@ -271,11 +240,16 @@ module.exports = {
         where: { id: customerId },
         data: updateData,
       });
-      await createLog(
-        "UPDATE_CUSTOMER",
-        `Customer dengan ID ${customerId} berhasil diupdate`,
-        null,
-        req.user?.id
+
+      // Log aktivitas update
+      await logUpdate(
+        "master_customers",
+        req.user.id,
+        req.user.username,
+        customerId,
+        existingCustomer,
+        { name, mandatoryFields },
+        `Customer diupdate: ${customer.name}`
       );
       res.status(200).json({
         status: "success",
@@ -317,14 +291,15 @@ module.exports = {
         data: { isDeleted: true },
       });
 
-      // Tambahkan log untuk delete customer
-      await createLog(
-        "DELETE_CUSTOMER",
-        `Customer "${customer.name}" dengan ID ${id} berhasil dihapus (soft delete)`,
-        null,
-        req.user?.id
+      // Log aktivitas delete
+      await logDelete(
+        "master_customers",
+        req.user.id,
+        req.user.username,
+        parseInt(id),
+        existingCustomer,
+        `Customer dihapus: ${customer.name}`
       );
-
       res.status(200).json({
         status: "success",
         message: "Customer berhasil dihapus (soft delete)",
@@ -341,45 +316,7 @@ module.exports = {
 
   getValidFields: async (req, res) => {
     try {
-      const validFields = [
-        "letDownRatio",
-        "resin",
-        "pelletLength",
-        "pelletDiameter",
-        "pelletVisual",
-        "dispersibility",
-        "mfr",
-        "density",
-        "moisture",
-        "carbonContent",
-        "analysisDate",
-        "foreignMatter",
-        "weightOfChips",
-        "intrinsicViscosity",
-        "ashContent",
-        "heatStability",
-        "lightFastness",
-        "granule",
-        "tintDeltaE",
-        "colorDeltaE",
-        "deltaP",
-        "macaroni",
-        "caCO3",
-        "odor",
-        "nucleatingAgent",
-        "hals",
-        "hiding",
-      ];
-
-      // Tambahkan log untuk mengambil valid fields
-      await createLog(
-        "GET_VALID_FIELDS",
-        "Berhasil mengambil daftar valid fields",
-        null,
-        req.user?.id
-      );
-
-      res.status(200).json({ fields: validFields });
+      res.status(200).json({ fields: Object.keys(FIELD_MAP) });
     } catch (error) {
       res.status(500).json({
         error: "Failed to get valid fields",

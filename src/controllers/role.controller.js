@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { logCreate, logUpdate, logDelete } = require("../utils/logger");
 const prisma = new PrismaClient();
 
 const roleController = {
@@ -53,6 +54,16 @@ const roleController = {
         },
       });
 
+      // Log aktivitas create
+      await logCreate(
+        "roles",
+        req.user.id,
+        req.user.username,
+        role.id,
+        { name, description, permissions },
+        `Role baru dibuat: ${name}`
+      );
+
       res.status(201).json({
         status: "success",
         message: "Role berhasil dibuat",
@@ -69,6 +80,18 @@ const roleController = {
     try {
       const { id } = req.params;
       const { name, description, permissions } = req.body;
+
+      // Get existing role data for logging
+      const existingRole = await prisma.role.findUnique({
+        where: { id: parseInt(id) },
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
+          },
+        },
+      });
 
       // Delete existing permissions
       await prisma.role_permission.deleteMany({
@@ -96,6 +119,21 @@ const roleController = {
           },
         },
       });
+
+      // Log aktivitas update
+      await logUpdate(
+        "roles",
+        req.user.id,
+        req.user.username,
+        parseInt(id),
+        {
+          name: existingRole.name,
+          description: existingRole.description,
+          permissions: existingRole.permissions.map((p) => p.permission.id),
+        },
+        { name, description, permissions },
+        `Role diupdate: ${name}`
+      );
 
       res.json({
         status: "success",
@@ -127,6 +165,17 @@ const roleController = {
         where: { id: parseInt(id) },
         data: { isDeleted: true },
       });
+
+      // Log aktivitas delete
+      await logDelete(
+        "roles",
+        req.user.id,
+        req.user.username,
+        parseInt(id),
+        { name: role.name, description: role.description },
+        `Role dihapus: ${role.name}`
+      );
+
       res.json({
         status: "success",
         message: "Role berhasil dihapus (soft delete)",

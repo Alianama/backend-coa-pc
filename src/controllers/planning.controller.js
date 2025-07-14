@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { logCreate, logUpdate, logDelete } = require("../utils/logger");
 const prisma = new PrismaClient();
 
 // Helper function untuk mengupdate quantityCheck
@@ -74,6 +75,16 @@ const planningHeaderController = {
           creator: { select: { fullName: true } },
         },
       });
+
+      // Log aktivitas create
+      await logCreate(
+        "planning_headers",
+        req.user.id,
+        planning.id,
+        data,
+        `Planning baru dibuat: ${planning.lotNumber}`
+      );
+
       res.status(201).json({
         status: "success",
         message: "Planning berhasil dibuat",
@@ -244,11 +255,26 @@ const planningHeaderController = {
         data.expiryDate = expiryDate;
       }
 
+      // Get existing planning data for logging
+      const existingPlanning = await prisma.planning_header.findUnique({
+        where: { id: parseInt(id) },
+      });
+
       const planning = await prisma.planning_header.update({
         where: { id: parseInt(id) },
         data,
         include: { creator: { select: { fullName: true } } },
       });
+
+      // Log aktivitas update
+      await logUpdate(
+        "planning_headers",
+        req.user.id,
+        parseInt(id),
+        existingPlanning,
+        data,
+        `Planning diupdate: ${planning.lotNumber}`
+      );
 
       res.json({
         status: "success",
@@ -280,6 +306,16 @@ const planningHeaderController = {
         where: { id: parseInt(id) },
         data: { isDeleted: true },
       });
+
+      // Log aktivitas delete
+      await logDelete(
+        "planning_headers",
+        req.user.id,
+        parseInt(id),
+        planning,
+        `Planning dihapus: ${planning.lotNumber}`
+      );
+
       res.json({
         status: "success",
         message: "Planning berhasil dihapus (soft delete)",
@@ -473,6 +509,16 @@ const planningHeaderController = {
           creator: { select: { fullName: true } },
         },
       });
+
+      // Log aktivitas create detail
+      await logCreate(
+        "planning_details",
+        req.user.id,
+        detail.id,
+        { ...cleanData, tintDeltaE, colorDeltaE, qcJudgment },
+        `Planning detail baru dibuat untuk planning ID ${idPlanning}`
+      );
+
       await prisma.planning_header.update({
         where: { id: idPlanning },
         data: { status: "progress" },
@@ -843,6 +889,17 @@ const planningHeaderController = {
         data: updatePayload,
         include: { creator: { select: { fullName: true } } },
       });
+
+      // Log aktivitas update detail
+      await logUpdate(
+        "planning_details",
+        req.user.id,
+        parseInt(id),
+        detailOld,
+        updatePayload,
+        `Planning detail diupdate untuk planning ID ${detailOld.idPlanning}`
+      );
+
       await updateQuantityCheck(detailOld.idPlanning);
       res.json({
         status: "success",
@@ -883,6 +940,16 @@ const planningHeaderController = {
         where: { id: parseInt(id) },
         data: { isDeleted: true },
       });
+
+      // Log aktivitas delete detail
+      await logDelete(
+        "planning_details",
+        req.user.id,
+        parseInt(id),
+        detailToDelete,
+        `Planning detail dihapus untuk planning ID ${idPlanning}`
+      );
+
       const remainingDetails = await prisma.planning_detail.count({
         where: { idPlanning, isDeleted: false },
       });

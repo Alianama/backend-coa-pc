@@ -290,13 +290,12 @@ model master_customer {
 }
 
 model log {
-  id          Int         @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   action      String
-  description String
-  coaId       Int?        @map("coa_id")
-  userId      Int         @map("user_id")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  user        user        @relation(fields: [userId], references: [id])
+  description String   @db.Text
+  userId      Int      @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        user     @relation(fields: [userId], references: [id])
 
   @@map("logs")
 }

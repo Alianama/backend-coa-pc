@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { logCreate, logUpdate, logDelete } = require("../utils/logger");
 const prisma = new PrismaClient();
 
 // Daftar field valid dari enum StandardProperty di schema Prisma
@@ -112,6 +113,19 @@ const createProductStandard = async (req, res) => {
       keySet.add(key);
     }
     const data = await prisma.product_standards.createMany({ data: input });
+
+    // Log aktivitas create untuk setiap item
+    for (const item of input) {
+      await logCreate(
+        "product_standards",
+        req.user.id,
+        req.user.username,
+        null,
+        item,
+        `Product standard baru dibuat untuk product_id ${item.product_id}, property: ${item.property_name}`
+      );
+    }
+
     // Update status product terkait
     if (input[0] && input[0].product_id) {
       await updateProductStatusByStandard(input[0].product_id);
@@ -143,10 +157,27 @@ const updateProductStandard = async (req, res) => {
             )}`,
           });
         }
+
+        // Get existing data for logging
+        const existingStandard = await prisma.product_standards.findUnique({
+          where: { id: parseInt(item.id) },
+        });
+
         const updated = await prisma.product_standards.update({
           where: { id: parseInt(item.id) },
           data: item,
         });
+
+        // Log aktivitas update
+        await logUpdate(
+          "product_standards",
+          req.user.id,
+          parseInt(item.id),
+          existingStandard,
+          item,
+          `Product standard diupdate: ${item.property_name}`
+        );
+
         results.push(updated);
       }
       return res.json({ status: "success", data: results });
@@ -163,10 +194,26 @@ const updateProductStandard = async (req, res) => {
           )}`,
         });
       }
+      // Get existing data for logging
+      const existingStandard = await prisma.product_standards.findUnique({
+        where: { id: parseInt(id) },
+      });
+
       const data = await prisma.product_standards.update({
         where: { id: parseInt(id) },
         data: req.body,
       });
+
+      // Log aktivitas update
+      await logUpdate(
+        "product_standards",
+        req.user.id,
+        parseInt(id),
+        existingStandard,
+        req.body,
+        `Product standard diupdate: ${data.property_name}`
+      );
+
       res.json({ status: "success", data });
     }
   } catch (err) {
@@ -190,6 +237,16 @@ const deleteProductStandard = async (req, res) => {
       where: { id: parseInt(id) },
       data: { isDeleted: true },
     });
+
+    // Log aktivitas delete
+    await logDelete(
+      "product_standards",
+      req.user.id,
+      parseInt(id),
+      standard,
+      `Product standard dihapus: ${standard.property_name}`
+    );
+
     // Update status product terkait
     if (standard && standard.product_id) {
       await updateProductStatusByStandard(standard.product_id);

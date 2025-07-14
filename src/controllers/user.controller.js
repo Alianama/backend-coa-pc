@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcrypt");
+const { logCreate, logUpdate, logDelete } = require("../utils/logger");
 
 const prisma = new PrismaClient();
 
@@ -48,6 +49,16 @@ const userController = {
           role: true,
         },
       });
+
+      // Log aktivitas create
+      await logCreate(
+        "users",
+        req.user.id,
+        user.id,
+        { fullName, username, email, roleId },
+        `User baru dibuat: ${fullName}`
+      );
+
       res.status(201).json({
         status: "success",
         message: "User berhasil dibuat",
@@ -190,6 +201,21 @@ const userController = {
         },
       });
 
+      // Log aktivitas update
+      await logUpdate(
+        "users",
+        req.user.id,
+        parseInt(id),
+        {
+          fullName: existingUser.fullName,
+          username: existingUser.username,
+          email: existingUser.email,
+          roleId: existingUser.roleId,
+        },
+        { fullName, username, email, roleId },
+        `User diupdate: ${fullName}`
+      );
+
       res.json({
         status: "success",
         message: "User berhasil diupdate",
@@ -221,6 +247,16 @@ const userController = {
         where: { id: parseInt(id) },
         data: { isDeleted: true },
       });
+
+      // Log aktivitas delete
+      await logDelete(
+        "users",
+        req.user.id,
+        parseInt(id),
+        { fullName: user.fullName, username: user.username, email: user.email },
+        `User dihapus: ${user.fullName}`
+      );
+
       res.json({
         status: "success",
         message: "User berhasil dihapus (soft delete)",
@@ -284,6 +320,16 @@ const userController = {
           role: true,
         },
       });
+
+      // Log aktivitas create
+      await logCreate(
+        "users",
+        req.user.id,
+        user.id,
+        { username, fullName, email, roleId },
+        `User baru dibuat: ${fullName}`
+      );
+
       res.status(201).json({
         status: "success",
         message: "User berhasil dibuat",
@@ -308,7 +354,23 @@ const userController = {
           data: null,
         });
       }
+      // Get user data before deletion for logging
+      const userToDelete = await prisma.user.findUnique({
+        where: { id: parseInt(id) },
+        select: { id: true, username: true, fullName: true, email: true },
+      });
+
       await prisma.user.delete({ where: { id: parseInt(id) } });
+
+      // Log aktivitas delete
+      await logDelete(
+        "users",
+        req.user.id,
+        parseInt(id),
+        userToDelete,
+        `User dihapus: ${userToDelete.fullName}`
+      );
+
       res.json({
         status: "success",
         message: "User berhasil dihapus",
