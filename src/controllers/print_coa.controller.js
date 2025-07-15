@@ -140,6 +140,7 @@ const printCoaController = {
         "pelletDiameter",
         "dispersibility",
         "dispersion",
+        "contamination",
         "visualCheck",
         "colorCheck",
         "odor",

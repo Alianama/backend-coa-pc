@@ -480,6 +480,8 @@ const planningHeaderController = {
         "deltaP",
         "density",
         "mfr",
+        "dispersion",
+        "contamination",
       ];
 
       floatFields.forEach((field) => {
@@ -735,6 +737,8 @@ const planningHeaderController = {
         "density",
         "mfr",
         "caCO3",
+        "dispersion",
+        "contamination",
       ];
 
       floatFields.forEach((field) => {
@@ -875,6 +879,8 @@ const planningHeaderController = {
         "hals",
         "hiding",
         "remark",
+        "dispersion",
+        "contamination",
       ];
       const updatePayload = {};
       allowedFields.forEach((field) => {

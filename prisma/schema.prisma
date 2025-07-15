@@ -44,7 +44,8 @@ enum StandardProperty {
   hiding
   odor
   nucleatingAgent
-}
+  dispersion
+  }
 
 model user {
   id                  Int            @id @default(autoincrement())
@@ -126,7 +127,8 @@ model print_coa {
   remarks            String?   @map("remarks")
   rejectedBy         Int?      @map("rejected_by")
   rejectedDate       DateTime? @map("rejected_date")
-  dispersion         String?
+  dispersion         Float?
+  contamination      Float?
   visualCheck        PassNG?   @map("visual_check")
   colorCheck         PassNG?   @map("color_check")
   shippedToCustomerId Int?     @map("shipped_to_customer_id") // customer tujuan pengiriman (opsional)
@@ -216,6 +218,7 @@ model deleted_coa {
   pelletVisual       Boolean?  @map("pellet_visual")
   dispersibility     String?
   mfr                Float?
+  contamination      Float?
   density            Float?
   moisture           Float?
   carbonContent      Float?    @map("carbon_content")
@@ -281,6 +284,8 @@ model master_customer {
   nucleatingAgent           Boolean? @default(false) @map("nucleating_agent")
   hals                      Boolean  @default(false) @map("hals")
   hiding                    Boolean  @default(false) @map("hiding")
+  dispersion                Boolean  @default(false) @map("dispersion")
+  contamination             Boolean  @default(false) @map("contamination")
   isDeleted                 Boolean  @default(false) @map("is_deleted")
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
@@ -386,7 +391,7 @@ model planning_detail {
   createdBy          Int      @map("created_by")
   createdAt          DateTime @default(now()) @map("created_at")
   creator            user     @relation(fields: [createdBy], references: [id])
-  dispersion         String?
+  dispersion         Float?
 
   @@map("planning_details")
 }

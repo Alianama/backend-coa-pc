@@ -31,6 +31,8 @@ const VALID_COA_FIELDS = [
   "nucleatingAgent",
   "hals",
   "hiding",
+  "dispersion",
+  "contamination",
 ];
 
 const FIELD_MAP = {
@@ -60,6 +62,8 @@ const FIELD_MAP = {
   nucleatingAgent: "nucleatingAgent",
   hals: "hals",
   hiding: "hiding",
+  dispersion: "dispersion",
+  contamination: "contamination",
 };
 
 function mapMandatoryFieldsToDb(mandatoryFields = {}) {

@@ -35,6 +35,8 @@ const VALID_FIELDS = [
   "hiding",
   "odor",
   "nucleatingAgent",
+  "dispersion",
+  "contamination",
 ];
 
 const getAllProductStandards = async (req, res) => {
