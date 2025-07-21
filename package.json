@@ -5,9 +5,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
     "prisma": "prisma",
     "seed": "node prisma/seed.js",
-    "prisma:seed": "node prisma/seed.js"
+    "prisma:seed": "node prisma/seed.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy"
   },
   "keywords": [],
   "author": "",
