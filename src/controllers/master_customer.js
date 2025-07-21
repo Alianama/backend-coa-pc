@@ -33,6 +33,7 @@ const VALID_COA_FIELDS = [
   "hiding",
   "dispersion",
   "contamination",
+  "pelletVisual",
 ];
 
 const FIELD_MAP = {
@@ -64,6 +65,7 @@ const FIELD_MAP = {
   hiding: "hiding",
   dispersion: "dispersion",
   contamination: "contamination",
+  pelletVisual: "pelletVisual",
 };
 
 function mapMandatoryFieldsToDb(mandatoryFields = {}) {

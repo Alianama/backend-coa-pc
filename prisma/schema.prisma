@@ -8,7 +8,7 @@ datasource db {
 }
 
 enum PassNG {
-  Pass
+  PASS
   NG
 }
 
@@ -30,6 +30,7 @@ enum StandardProperty {
   pelletLength
   pelletDiameter
   visualCheck
+  pelletVisual
   moisture
   carbonContent
   foreignMatter
@@ -60,10 +61,6 @@ model user {
   updatedAt           DateTime       @updatedAt @map("updated_at")
   role                role           @relation(fields: [roleId], references: [id])
   printedCoas         print_coa[]    @relation("printedBy")
-  deletedCoasCreated  deleted_coa[]  @relation("DeletedCreatedBy", map: "deleted_coa_created_fkey")
-  deletedCoasApproved deleted_coa[]  @relation("DeletedApprovedBy", map: "deleted_coa_approved_fkey")
-  deletedCoas         deleted_coa[]  @relation("DeletedBy", map: "deleted_coa_deleted_fkey")
-  restoredCoas        deleted_coa[]  @relation("RestoredBy", map: "deleted_coa_restored_fkey")
   logs                log[]
   products            master_product[]
   planningHeaders     planning_header[]
@@ -92,7 +89,6 @@ model print_coa {
   resin              String?
   pelletLength       Float?    @map("pellet_length")
   pelletDiameter     Float?    @map("pellet_diameter")
-  dispersibility     String?
   mfr                Float?
   density            Float?
   moisture           Float?
@@ -119,7 +115,6 @@ model print_coa {
   printedBy          Int?      @map("printed_by")
   creator            user?     @relation("printedBy", fields: [printedBy], references: [id])
   caCO3              Float?    @map("ca_co3")
-  odor               PassNG?   @map("odor")
   nucleatingAgent    String?   @map("nucleating_agent")
   hals               String?   @map("hals")
   hiding             String?   @map("hiding")
@@ -129,9 +124,12 @@ model print_coa {
   rejectedDate       DateTime? @map("rejected_date")
   dispersion         Float?
   contamination      Float?
+  odor               PassNG?   
+  dispersibility     PassNG?
+  pelletVisual       PassNG?   @map("pellet_visual")
   visualCheck        PassNG?   @map("visual_check")
   colorCheck         PassNG?   @map("color_check")
-  shippedToCustomerId Int?     @map("shipped_to_customer_id") // customer tujuan pengiriman (opsional)
+  shippedToCustomerId Int?     @map("shipped_to_customer_id") 
 
   @@map("print_coa")
 }
@@ -207,53 +205,7 @@ model product_standards {
   @@map("product_standards")
 }
 
-model deleted_coa {
-  id                 Int       @id @default(autoincrement())
-  costumerName       String    @map("costumer_name")
-  productName        String    @map("product_name")
-  lotNumber          String    @map("lot_number")
-  letDownRatio       String?   @map("let_down_ratio")
-  pelletLength       Float?    @map("pellet_length")
-  pelletHeight       Float?    @map("pellet_height")
-  pelletVisual       Boolean?  @map("pellet_visual")
-  dispersibility     String?
-  mfr                Float?
-  contamination      Float?
-  density            Float?
-  moisture           Float?
-  carbonContent      Float?    @map("carbon_content")
-  mfgDate            DateTime? @map("mfg_date")
-  expiryDate         DateTime? @map("expiry_date")
-  analysisDate       DateTime? @map("analysis_date")
-  printedDate        DateTime? @map("printed_date")
-  foreignMatter      String?   @map("foreign_matter")
-  weightOfChips      Float?    @map("weight_of_chips")
-  intrinsicViscosity Float?    @map("intrinsic_viscosity")
-  ashContent         Float?    @map("ash_content")
-  heatStability      Float?    @map("heat_stability")
-  lightFastness      Float?    @map("light_fastness")
-  granule            String?
-  deltaE             Float?    @map("delta_e")
-  macaroni           Float?
-  issueBy            String?   @map("issue_by")
-  approvedBy         Int?      @map("approved_by")
-  approvedDate       DateTime? @map("approved_date")
-  createdBy          Int?      @map("created_by")
-  createdAt          DateTime? @map("created_at")
-  updatedAt          DateTime? @map("updated_at")
-  deletedBy          Int?      @map("deleted_by")
-  deletedAt          DateTime  @default(now()) @map("deleted_at")
-  isRestored         Boolean   @default(false) @map("is_restored")
-  restoredAt         DateTime? @map("restored_at")
-  restoredBy         Int?      @map("restored_by")
-  originalId         Int       @unique @map("original_id")
-  creator            user?     @relation("DeletedCreatedBy", fields: [createdBy], references: [id])
-  approver           user?     @relation("DeletedApprovedBy", fields: [approvedBy], references: [id])
-  deleter            user?     @relation("DeletedBy", fields: [deletedBy], references: [id])
-  restorer           user?     @relation("RestoredBy", fields: [restoredBy], references: [id])
 
-  @@map("deleted_coa")
-}
 
 model master_customer {
   id                        Int      @id @default(autoincrement())
@@ -286,6 +238,7 @@ model master_customer {
   hiding                    Boolean  @default(false) @map("hiding")
   dispersion                Boolean  @default(false) @map("dispersion")
   contamination             Boolean  @default(false) @map("contamination")
+  pelletVisual              Boolean?  @default(false) @map("pellet_visual")
   isDeleted                 Boolean  @default(false) @map("is_deleted")
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
@@ -361,12 +314,13 @@ model planning_detail {
   deltaP             Float?   @map("delta_p")
   density            Float?
   mfr                Float?
-  dispersibility     String?
+  dispersibility     PassNG?
   contamination      Float?
   macaroni           Float?
   pelletLength       Float?   @map("pellet_length")
   pelletDiameter     Float?   @map("pellet_diameter")
   visualCheck        PassNG?  @map("visual_check")
+  pelletVisual       PassNG?  @map("pellet_visual")
   colorCheck         PassNG?  @map("color_check")
   moisture           Float?
   carbonContent      Float?   @map("carbon_content")

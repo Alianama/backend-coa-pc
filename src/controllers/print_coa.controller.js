@@ -139,6 +139,7 @@ const printCoaController = {
         "pelletLength",
         "pelletDiameter",
         "dispersibility",
+        "pelletVisual",
         "dispersion",
         "contamination",
         "visualCheck",
@@ -504,6 +505,9 @@ const printCoaController = {
         GREATER_EQUAL: "≥",
       };
 
+      // Helper to format numbers to one decimal place
+      const to1 = (v) => (typeof v === "number" ? v.toFixed(1) : v);
+
       // 7. Bentuk testItems
       let testItems = [];
       // Helper untuk cari standard dengan dua kemungkinan nama
@@ -522,34 +526,24 @@ const printCoaController = {
         "nucleatingAgent",
         "dispersibility",
         "visualCheck",
+        "pelletVisual",
         "colorCheck",
         "hiding",
         "hals",
         "dispersion",
       ];
+
       if (hasPelletLength && hasPelletDiameter) {
-        // Gabungkan keduanya
-        // Ambil standard dan unit
         const stdL =
           findStd(productStandards, "pelletLength") ||
           findStd(productStandards, "pellet_length");
         const stdD =
           findStd(productStandards, "pelletDiameter") ||
           findStd(productStandards, "pellet_diameter");
-        const to2 = (v) => (typeof v === "number" ? v.toFixed(2) : v);
-        let unitL = stdL && stdL.unit ? stdL.unit : "";
-        let unitD = stdD && stdD.unit ? stdD.unit : "";
-        let opL = stdL ? operatorMap[stdL.operator] || stdL.operator : "";
-        let opD = stdD ? operatorMap[stdD.operator] || stdD.operator : "";
-        let toleranceL =
-          stdL && stdL.tolerance !== undefined && stdL.tolerance !== null
-            ? ` ${opL}${to2(stdL.tolerance)} ${unitL}`
-            : "";
-        let toleranceD =
-          stdD && stdD.tolerance !== undefined && stdD.tolerance !== null
-            ? ` ${opD}${to2(stdD.tolerance)} ${unitD}`
-            : "";
-        // Tentukan unit yang akan ditampilkan di akhir (gunakan unit yang sama jika sama, atau gabungkan jika berbeda)
+
+        let unitL = stdL?.unit || "";
+        let unitD = stdD?.unit || "";
+
         let finalUnit = "";
         if (unitL === unitD && unitL) {
           finalUnit = unitL;
@@ -561,101 +555,106 @@ const printCoaController = {
           finalUnit = unitD;
         }
 
-        let stdStr;
+        let opL = stdL ? operatorMap[stdL.operator] || stdL.operator : "";
+        let opD = stdD ? operatorMap[stdD.operator] || stdD.operator : "";
+
+        let toleranceLStr =
+          stdL && stdL.tolerance !== undefined && stdL.tolerance !== null
+            ? ` ${opL}${to1(stdL.tolerance)}`
+            : "";
+        let toleranceDStr =
+          stdD && stdD.tolerance !== undefined && stdD.tolerance !== null
+            ? ` ${opD}${to1(stdD.tolerance)}`
+            : "";
+
+        let specStr;
         if (stdL && stdD) {
-          stdStr = `${to2(stdL?.target_value)} x ${to2(stdD?.target_value)}${
-            finalUnit ? " " + finalUnit : ""
-          }${
-            toleranceL || toleranceD
-              ? " / " +
-                toleranceL +
-                (toleranceL && toleranceD ? " & " : "") +
-                toleranceD
-              : ""
+          const toleranceToDisplay = toleranceLStr || toleranceDStr;
+          specStr = `${to1(stdL?.target_value)} x ${to1(stdD?.target_value)}${
+            toleranceToDisplay ? " /" + toleranceToDisplay : ""
           }`
             .replace(/\s+/g, " ")
             .trim();
         } else {
-          stdStr = "Same as STD";
+          specStr = "Same as STD";
         }
-        let resStr = "";
+
         let resL = printedCoa["pelletLength"];
         let resD = printedCoa["pelletDiameter"];
-        if (typeof resL === "number") resL = resL.toFixed(2);
-        if (typeof resD === "number") resD = resD.toFixed(2);
-        resStr = `${resL || "-"} x ${resD || "-"}${
-          finalUnit ? " " + finalUnit : ""
-        }`;
+        let resStr = `${to1(resL) || "-"} x ${to1(resD) || "-"}`;
+
         testItems.push({
           parameter: "Pellet Size L x D",
-          standard: stdStr,
+          specification: specStr,
+          unit: finalUnit,
           result: resStr,
         });
+
         // Hapus dari usedFields agar tidak diulang di bawah
         usedFields = usedFields.filter(
           (f) => f !== "pelletLength" && f !== "pelletDiameter"
         );
       }
+
       // Sisanya proses seperti biasa
       testItems = [
         ...testItems,
         ...usedFields.map((field) => {
-          if (stringFields.includes(field)) {
-            let result = printedCoa[field] ?? printedCoa[toCamelCase(field)];
-            if (result === undefined || result === null || result === "")
-              result = "-";
-            let paramLabel = field
-              .replace(/([A-Z])/g, " $1")
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (c) => c.toUpperCase())
-              .trim();
-            return {
-              parameter: paramLabel,
-              standard: "Same as STD",
-              result,
-            };
-          }
-          const std = productStandards.find((s) => s.property_name === field);
-          let standard = "-";
-          let unit = std && std.unit ? std.unit : "";
-          const to2 = (v) => (typeof v === "number" ? v.toFixed(2) : v);
-          if (std) {
-            const op = operatorMap[std.operator] || std.operator;
-            let toleranceStr =
-              std.tolerance !== undefined && std.tolerance !== null
-                ? ` ${op}${to2(std.tolerance)} ${unit}`
-                : "";
-            standard = `${to2(std.target_value)}${
-              unit ? " " + unit : " "
-            }${toleranceStr}`.trim();
-          }
-          let result = printedCoa[field];
-          if (result instanceof Date) {
-            result = result.toISOString().split("T")[0];
-          }
-          if (typeof result === "number") {
-            result = result.toFixed(2);
-          }
-          if (
-            unit &&
-            result !== undefined &&
-            result !== null &&
-            result !== "-"
-          ) {
-            result = `${result} ${unit}`;
-          } else if (result === undefined || result === null) {
-            result = "-";
-          }
           let paramLabel = field
             .replace(/([A-Z])/g, " $1")
             .replace(/_/g, " ")
             .replace(/\b\w/g, (c) => c.toUpperCase())
             .trim();
+          if (field === "mfr") paramLabel = "MFR";
           paramLabel = paramLabel.replace(/Delta/gi, "Δ");
+
+          if (stringFields.includes(field)) {
+            let result = printedCoa[field] ?? printedCoa[toCamelCase(field)];
+            if (result === undefined || result === null || result === "")
+              result = "-";
+
+            let specification = "Same as STD";
+            if (field === "pelletVisual") {
+              specification = "That no defect in the visual pellet";
+            }
+
+            return {
+              parameter: paramLabel,
+              specification,
+              unit: "",
+              result,
+            };
+          }
+
+          const std = productStandards.find((s) => s.property_name === field);
+          let specification = "-";
+          let unit = std?.unit || "";
+
+          if (std) {
+            const op = operatorMap[std.operator] || std.operator;
+            let toleranceStr =
+              std.tolerance !== undefined && std.tolerance !== null
+                ? ` ${op}${to1(std.tolerance)}`
+                : "";
+            specification = `${to1(std.target_value)}${toleranceStr}`.trim();
+          }
+
+          let result = printedCoa[field];
+          if (result instanceof Date) {
+            result = result.toISOString().split("T")[0];
+          } else if (typeof result === "number") {
+            result = to1(result);
+          }
+
+          if (result === undefined || result === null) {
+            result = "-";
+          }
+
           return {
             parameter: paramLabel,
-            standard,
-            result,
+            specification,
+            unit,
+            result: result.toString(),
           };
         }),
       ];

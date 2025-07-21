@@ -381,7 +381,6 @@ const planningHeaderController = {
         colorDeltaB,
         visualCheck,
         colorCheck,
-        odor,
       } = req.body;
       const tintDeltaE = hitungMagnitude(tintDeltaL, tintDeltaA, tintDeltaB);
       const colorDeltaE = hitungMagnitude(
@@ -450,7 +449,7 @@ const planningHeaderController = {
         }
       }
       // Setelah loop, cek visual_check dan color_check
-      if (visualCheck !== "Pass" || colorCheck !== "Pass" || odor !== "Pass") {
+      if (visualCheck !== "Pass" || colorCheck !== "Pass") {
         allPassed = false;
       }
       if (allPassed) qcJudgment = "Passed";
@@ -498,6 +497,19 @@ const planningHeaderController = {
           cleanData[field] = parseFloat(cleanData[field]);
         }
       });
+
+      // Definisikan semua field yang bertipe PassNG
+      const passNgFields = ["visualCheck", "colorCheck"];
+
+      // Setelah loop, cek semua field PassNG
+      for (const field of passNgFields) {
+        if (cleanData[field] && cleanData[field] !== "PASS") {
+          allPassed = false;
+          break;
+        }
+      }
+
+      if (allPassed) qcJudgment = "Passed";
 
       const detail = await prisma.planning_detail.create({
         data: {
@@ -830,13 +842,18 @@ const planningHeaderController = {
           }
         }
       }
-      // Setelah loop, cek visual_check dan color_check
-      if (
-        mergedData.visualCheck !== "Pass" ||
-        mergedData.colorCheck !== "Pass"
-      ) {
-        allPassed = false;
+
+      // Definisikan semua field yang bertipe PassNG
+      const passNgFields = ["visualCheck", "colorCheck"];
+
+      // Setelah loop, cek semua field PassNG
+      for (const field of passNgFields) {
+        if (mergedData[field] && mergedData[field] !== "PASS") {
+          allPassed = false;
+          break;
+        }
       }
+
       if (allPassed) qcJudgment = "Passed";
       mergedData.qcJudgment = qcJudgment;
 
@@ -860,6 +877,7 @@ const planningHeaderController = {
         "pelletLength",
         "pelletDiameter",
         "visualCheck",
+        "pelletVisual",
         "colorCheck",
         "moisture",
         "carbonContent",

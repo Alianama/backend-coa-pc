@@ -45,12 +45,12 @@
  *         pelletVisual:
  *           type: string
  *           description: Visual check pellet
- *         color:
- *           type: string
- *           description: Warna
  *         dispersibility:
- *           type: number
+ *           type: string
  *           description: Dispersibility
+ *         dispersion:
+ *           type: number
+ *           format: float
  *         mfr:
  *           type: number
  *           description: MFR
